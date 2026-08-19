@@ -29,7 +29,7 @@ Client on **http://localhost:5173**, game server on **ws://localhost:8787**.
 Open the client, enter a name, get a 4-letter room code, share it. Up to five.
 
 ```bash
-npm test        # 67 tests — sim, classes, progression, loot, and balance regression
+npm test        # 89 tests — sim, classes, progression, loot, headcount, balance regression
 npm run balance # headless full-campaign report, no browser needed
 npm run typecheck
 ```
@@ -92,6 +92,36 @@ Letter* means you cannot be downed, only removed from the building.
 Account level, per-animal levels and a 20-item stash persist between runs against
 a `localStorage` id. No sign-up.
 
+## Headcount, and the cost of losing it
+
+Towers do not occupy slots. They consume **people** — an automated process needs
+**1 FTE** to own, a manual one needs **2**. That single table is the entire
+argument for automation, and it sits on the build bar rather than in a deck.
+
+Getting a head is a **queue, not a purchase**: Social Capital to make the case,
+Budget for recruitment, then three stages — drafting, Finance, the CFO — at one
+wave each. A req raised now lands about three waves late.
+
+And there is a catch-22, because there always is: below 72% SLA the CFO defers it
+once. *"Before we add people, show me you can run what you have."* You cannot
+hire your way out of a process problem.
+
+Losing a head costs in every currency:
+
+| Route | Budget | Morale | Social | Consultation | Claim risk |
+|---|---|---|---|---|---|
+| **Do Not Backfill** | — | — | — | 45s | — |
+| **Voluntary Redundancy** | 140 | 5 | 4 | 12s | 5% |
+| **Compulsory Redundancy** | 45 | 14 | 12 | 40s, draining throughout | **45%** |
+
+Compulsory is cheapest in money and most expensive in everything else, and its
+claim risk puts a real Employee Relations case on the board — which drains
+Compliance and is invisible to every tower you own. The cheap option is not the
+cheap option.
+
+Go over headcount and nothing is deleted. The process still exists; there is
+simply nobody to run it, so it stands idle.
+
 ## The Stakeholders
 
 The same fourteen animals, as enemies — and they do not race you to the CHRO
@@ -127,10 +157,11 @@ alike, and covers where to add content without touching the engine.
 
 Playable vertical slice: one map, 3 lanes, 13 request types, 11 towers, 17 tech
 nodes, **14 animal classes** with talent trees, **14 Stakeholder enemies**,
-hero levelling and affixed loot, profile persistence, 8 waves plus the Open
+hero levelling and affixed loot, a headcount establishment with an approval
+pipeline and three redundancy routes, profile persistence, 8 waves plus the Open
 Enrollment boss, networked co-op for 1–5.
 
-**67 tests**, including a balance regression suite that plays the whole campaign
+**89 tests**, including a balance regression suite that plays the whole campaign
 headless in under a second and fails if processes stop out-damaging people.
 
 Not built yet: audio, maps 2+, the four non-Open-Enrollment bosses, crafting,

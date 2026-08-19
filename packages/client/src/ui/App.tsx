@@ -1,6 +1,7 @@
 import { ROLES, TOWERS, TOWER_IDS } from '@fte/shared'
 import type {
   ArtifactSlot,
+  ExitKind,
   GameState,
   PlayerId,
   Profile,
@@ -16,6 +17,7 @@ import { BottomBar } from './BottomBar.js'
 import { Lobby } from './Lobby.js'
 import { Briefing, EndCard, Steering } from './Overlays.js'
 import { CharacterSheet } from './CharacterSheet.js'
+import { Headcount } from './Headcount.js'
 import { TechTree } from './TechTree.js'
 import { TopBar } from './TopBar.js'
 
@@ -48,6 +50,7 @@ export function App() {
   const [selected, setSelected] = useState<TowerTypeId | null>(null)
   const [techOpen, setTechOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [hcOpen, setHcOpen] = useState(false)
 
   const netRef = useRef<NetClient | null>(null)
   const heldRef = useRef(new Set<string>())
@@ -116,10 +119,15 @@ export function App() {
         setSheetOpen((open) => !open)
         return
       }
+      if (key === 'h') {
+        setHcOpen((open) => !open)
+        return
+      }
       if (key === 'escape') {
         setSelected(null)
         setTechOpen(false)
         setSheetOpen(false)
+        setHcOpen(false)
         return
       }
       // W is taken by movement, so the second ability sits on F.
@@ -168,6 +176,9 @@ export function App() {
   const unequip = (slot: Parameters<typeof net.send>[0] extends never ? never : ArtifactSlot) =>
     net.send({ t: 'unequip', slot })
   const discard = (artifactId: string) => net.send({ t: 'discard', artifactId })
+  const raiseReq = () => net.send({ t: 'raise_req' })
+  const cancelReq = (id: number) => net.send({ t: 'cancel_req', id })
+  const removeHead = (kind: ExitKind) => net.send({ t: 'remove_headcount', kind })
 
   const place = (tile: Vec2) => {
     if (!selected) return
@@ -226,7 +237,7 @@ export function App() {
           </div>
 
           <div className="hint">
-            <b>WASD</b> move · <b>Q F E R</b> abilities · <b>C</b> character · <b>1-9</b> pick a process ·
+            <b>WASD</b> move · <b>Q F E R</b> abilities · <b>C</b> character · <b>H</b> headcount · <b>1-9</b> pick a process ·
             click to place
             <br />
             {me?.role && ROLES[me.role]?.title}
@@ -243,6 +254,15 @@ export function App() {
           )}
           {(state.phase === 'gameover' || state.phase === 'victory') && <EndCard state={state} />}
           {techOpen && <TechTree state={state} onUnlock={unlock} onClose={() => setTechOpen(false)} />}
+          {hcOpen && (
+            <Headcount
+              state={state}
+              onRaise={raiseReq}
+              onCancel={cancelReq}
+              onRemove={removeHead}
+              onClose={() => setHcOpen(false)}
+            />
+          )}
           {sheetOpen && (
             <CharacterSheet
               state={state}
@@ -264,6 +284,7 @@ export function App() {
         onSelect={setSelected}
         onOpenTech={() => setTechOpen(true)}
         onOpenSheet={() => setSheetOpen(true)}
+        onOpenHeadcount={() => setHcOpen(true)}
         onStartWave={startWave}
       />
     </div>

@@ -6,7 +6,7 @@ import {
   START_MORALE,
   START_SOCIAL_CAPITAL,
 } from '../constants.js'
-import { STARTING_TECH, getRole } from '../content/index.js'
+import { STARTING_HEADCOUNT, STARTING_TECH, getRole } from '../content/index.js'
 import { createHero, refreshHero } from '../progression.js'
 import type { GameState, Player, PlayerId, RoleId } from '../types.js'
 
@@ -41,7 +41,12 @@ export function createGame(seed: number): GameState {
     auras: [],
     overclockTicks: 0,
     overclockAmount: 1,
-    towerSlots: 18,
+    headcount: {
+      approved: STARTING_HEADCOUNT,
+      requisitions: [],
+      exits: [],
+      lastSalary: 0,
+    },
     storedDamage: {},
 
     nextEntityId: 1,

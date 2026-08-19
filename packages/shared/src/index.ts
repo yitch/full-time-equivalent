@@ -11,6 +11,7 @@ export {
   emptyProfile,
   emptyStats,
 } from './types-progression.js'
+export * from './sim/headcount.js'
 export * from './progression.js'
 export * from './rng.js'
 export * from './content/index.js'

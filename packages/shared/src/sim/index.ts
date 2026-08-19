@@ -16,6 +16,7 @@ import {
   getRequest,
   getRole,
   getTech,
+  HEADCOUNT_COST,
   getTower,
   isBuildable,
   laneLength,
@@ -41,6 +42,16 @@ import {
   tickMetrics,
 } from './heroes.js'
 import { overrideFactor, spawnStakeholder, stepStakeholders } from './stakeholders.js'
+import {
+  advanceRequisitions,
+  cancelRequisition,
+  chargeSalary,
+  enforceHeadcount,
+  headcountFree,
+  raiseRequisition,
+  removeHeadcount,
+  stepExits,
+} from './headcount.js'
 import { refreshHero, rollArtifact, spendTalent } from '../progression.js'
 import { ESCALATED_DAMAGE, ESCALATED_SPEED, damageRequest, escalate, pickTarget, spawnRequest } from './combat.js'
 import { addPlayer, pushLog, recomputeOwnership, removePlayer, setRole } from './state.js'
@@ -50,6 +61,7 @@ export * from './combat.js'
 export * from './abilities.js'
 export * from './heroes.js'
 export * from './stakeholders.js'
+export * from './headcount.js'
 
 // ─────────────────────────────────────────────────────────────── tower stats
 
@@ -149,6 +161,8 @@ export function step(state: GameState): GameState {
 
   stepPlayers(state)
   decayAuras(state)
+  stepExits(state)
+  enforceHeadcount(state)
   return state
 }
 
@@ -379,7 +393,7 @@ function stepTowers(state: GameState): void {
 
     survivors.push(tower)
 
-    if (tower.offline) continue
+    if (tower.offline || tower.unstaffed) continue
     if (def.fireRate <= 0) continue // prevention / spawn_filter towers never fire
 
     const stats = resolveTowerStats(state, tower)
@@ -502,6 +516,8 @@ function endWave(state: GameState): void {
   const wave = WAVES[state.waveIndex]
   if (!wave) return
   state.budget += wave.budgetReward
+  chargeSalary(state)
+  advanceRequisitions(state)
 
   const total = state.stats.resolved + state.stats.breached
   state.stats.slaCompliance = total > 0 ? state.stats.resolved / total : 1
@@ -655,6 +671,15 @@ export function applyIntent(state: GameState, playerId: PlayerId, intent: Intent
       player.move = { x: clamp(intent.x, -1, 1), y: clamp(intent.y, -1, 1) }
       return null
 
+    case 'raise_req':
+      return raiseRequisition(state, playerId)
+
+    case 'cancel_req':
+      return cancelRequisition(state, intent.id)
+
+    case 'remove_headcount':
+      return removeHeadcount(state, intent.kind)
+
     case 'start_wave':
       if (state.phase === 'briefing') {
         beginWave(state)
@@ -681,7 +706,12 @@ function buildTower(
   if (def.requires && !state.unlocked.includes(def.requires)) {
     return `${def.name} needs ${getTech(def.requires).name} first.`
   }
-  if (state.towers.length >= state.towerSlots) return 'No free capacity. You would need headcount.'
+  // Headcount, not slots: every process needs an owner, and an automated one
+  // needs fewer. This is where the automation argument stops being rhetorical.
+  const cost = HEADCOUNT_COST[def.channel]
+  if (headcountFree(state) < cost) {
+    return `No headcount to own it. ${def.name} needs ${cost} FTE; you have ${headcountFree(state)} free.`
+  }
   const x = Math.floor(tile.x)
   const y = Math.floor(tile.y)
   if (!isBuildable(x, y)) return 'Cannot build there.'
@@ -699,9 +729,11 @@ function buildTower(
     builtBy: playerId,
     targetId: null,
     expiresIn: -1,
+    unstaffed: false,
   })
   const player = state.players[playerId]
   if (player) player.stats.towersBuilt++
+  enforceHeadcount(state)
   state.events.push({ kind: 'build', at: { x: x + 0.5, y: y + 0.5 }, text: def.name, playerId })
   return null
 }
@@ -734,6 +766,7 @@ function sellTower(state: GameState, towerId: number): string | null {
   const def = getTower(tower.type)
   state.budget += Math.round(def.cost * SELL_REFUND)
   state.towers.splice(index, 1)
+  enforceHeadcount(state)
   return null
 }
 

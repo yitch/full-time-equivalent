@@ -353,3 +353,75 @@ button.chunky:disabled { opacity: 0.4; cursor: not-allowed; }
 .hero-strip .lv.pending { border-color: var(--social); color: var(--void); background: var(--social); }
 .role-card.locked { opacity: 0.35; cursor: not-allowed; }
 .role-card:disabled { cursor: not-allowed; }
+
+/* ── headcount ───────────────────────────────────────────────────────────── */
+
+.hc-summary { display: flex; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+.hc-stat {
+  border: 1px solid var(--wall); background: var(--void); padding: 6px 12px; min-width: 96px;
+}
+.hc-stat span { display: block; font-size: 7.5px; color: var(--paper-dim); letter-spacing: 0.1em; }
+.hc-stat b { font-size: 18px; font-family: 'Silkscreen', monospace; }
+.hc-stat em { display: block; font-size: 7.5px; color: var(--escalate); font-style: normal; }
+
+.hc-warn {
+  border-left: 3px solid var(--escalate); background: rgba(193,72,63,0.12);
+  padding: 6px 10px; font-size: 10px; color: var(--paper); margin: 0 0 12px;
+}
+
+.hc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.hc-sub {
+  font-family: 'Silkscreen', monospace; font-size: 9px; color: var(--paper-dim);
+  margin: 14px 0 6px; letter-spacing: 0.1em;
+}
+
+.hc-cost { display: flex; flex-direction: column; gap: 2px; margin: 8px 0; font-size: 10px; color: var(--paper-dim); }
+
+.hc-gate {
+  border-left: 3px solid var(--escalate); padding: 6px 10px; margin: 8px 0;
+  font-size: 9.5px; line-height: 1.5; color: var(--paper); background: rgba(193,72,63,0.1);
+}
+.hc-gate.ok { border-left-color: var(--tube); background: rgba(127,156,106,0.1); }
+
+.req { border: 1px solid var(--wall); background: var(--void); padding: 7px; margin-bottom: 6px; }
+.req .rt { font-size: 10px; font-weight: 600; }
+.req .rt .def { color: var(--escalate); }
+.req .rf { font-size: 8.5px; color: var(--paper-dim); line-height: 1.4; margin-top: 2px; }
+.req .rprog { display: flex; gap: 3px; margin: 5px 0; }
+.req .rprog span { flex: 1; height: 4px; background: var(--wall); }
+.req .rprog span.done { background: var(--tube-glow); }
+.req .rprog span.now { background: var(--social); }
+.req button {
+  font-family: inherit; font-size: 8px; padding: 3px 8px; cursor: pointer;
+  background: var(--wall); color: var(--paper); border: none;
+}
+.req .track { height: 5px; background: var(--void); border: 1px solid var(--wall); }
+.req .fill { height: 100%; }
+
+.exit { border: 1px solid var(--wall); background: var(--void); padding: 8px; margin-bottom: 7px; }
+.exit.compulsory { border-color: var(--escalate); }
+.exit.voluntary { border-color: var(--social); }
+.exit .en { font-size: 10.5px; font-weight: 600; }
+.exit .ef { font-size: 8.5px; color: var(--paper-dim); line-height: 1.45; margin: 3px 0 5px; }
+.exit .ec { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.exit .ec span { font-size: 8px; padding: 2px 5px; border: 1px solid var(--wall); }
+.exit .ec .b { color: var(--budget); }
+.exit .ec .m { color: var(--morale); }
+.exit .ec .s { color: var(--social); }
+.exit .ec .t { color: var(--paper-dim); }
+.exit .ec .r { color: var(--escalate); border-color: var(--escalate); }
+.exit button {
+  font-family: inherit; font-size: 9px; padding: 4px 10px; cursor: pointer;
+  background: var(--wall); color: var(--paper); border: none;
+}
+.exit button:hover:not(:disabled) { background: var(--wall-light); }
+.exit button:disabled { opacity: 0.4; cursor: not-allowed; }
+.build-card .cost .fte { color: var(--paper-dim); font-size: 7.5px; }
+.hc-chip {
+  font-family: inherit; font-size: 9px; padding: 2px 7px; cursor: pointer;
+  background: var(--void); color: var(--paper); border: 1px solid var(--wall);
+}
+.hc-chip:hover { border-color: var(--tube-glow); }
+.hc-chip b { color: var(--escalate); }
+.hc-chip em { color: var(--social); font-style: normal; }
+.hc-chip i { color: var(--morale); font-style: normal; }

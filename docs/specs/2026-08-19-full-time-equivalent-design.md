@@ -2,6 +2,9 @@
 *a people operations tower defence*
 
 **Status:** approved 2026-08-19 · **Slice:** Floor 3 — Shared Services
+**Revision 3 (2026-08-19):** headcount replaces abstract tower slots — every
+process needs an owner, automated ones need fewer, approval is a three-wave queue
+and removal costs in every currency.
 **Revision 2 (2026-08-19):** classes replaced by the fourteen corporate animals;
 OTTTD-style deployed heroes; Diablo-style levels, talents and affixed loot;
 Stakeholders added as an enemy tier that attacks towers rather than the door.
@@ -255,6 +258,64 @@ decorative.
 | `unload` | One huge burst of Morale damage, then leaves | The Visiting Executive (SEAGULL) |
 
 Managing one pays Social Capital and rolls for a drop.
+
+## 6d. Headcount — the real constraint
+
+Towers do not occupy abstract "slots". They consume **people**.
+
+| Tower channel | FTE to own |
+|---|---|
+| `automation` | **1** |
+| `process` | **2** |
+
+That one table is the automation argument, expressed as a budget line instead of
+a lecture. Fourteen approved FTE buys you fourteen automated processes or seven
+manual ones, and the player works that out without being told. Tightening the
+establishment measurably *raises* the share of work the towers do, because it
+pushes you off manual process towers — which is the mechanic arguing its own case.
+
+Every approved head costs **4 Budget per wave, forever**, charged on the
+*establishment* rather than on usage — you pay for the head whether or not a
+process is attached to it.
+
+**Going over headcount does not delete a tower.** It marks it `unstaffed`: the
+process still exists, there is simply nobody to run it, so it sits idle. Oldest
+towers keep their cover; the newest go dark first.
+
+### Getting approval — a queue, not a purchase
+
+Raising a requisition costs **Social Capital** (making the case) and **Budget**
+(recruitment and kit). It then enters a three-stage pipeline, one wave per stage:
+
+1. **Drafting the case** — there is a template. The template is from 2018.
+2. **With Finance** — Finance has questions about the assumptions.
+3. **With the CFO** — it is item eleven. They got to item seven.
+
+So a req raised now lands about three waves late, which is roughly when you no
+longer need it and exactly when you get it.
+
+**The catch-22 is the mechanic.** At the CFO stage, if run SLA is below **72%**,
+the req is *deferred once* — *"before we add people, show me you can run what you
+have."* You cannot hire your way out of a process problem, which is the game
+pointing at the tech tree. Withdrawing a req refunds most of the Budget and none
+of the credibility. Three reqs in the system at once is the cap; Finance will not
+look at a fourth.
+
+### Removing headcount — three routes, all of them cost
+
+| Route | Budget | Morale | Social | Consultation | Claim risk |
+|---|---|---|---|---|---|
+| **Do Not Backfill** | — | — | — | 45s | — |
+| **Voluntary Redundancy** | 140 | 5 | 4 | 12s | 5% |
+| **Compulsory Redundancy** | 45 | 14 | 12 | 40s, draining 0.22 Morale/s | **45%** |
+
+The head is committed the moment the process starts — cover is lost immediately,
+while you keep paying the salary until the consultation ends. Compulsory is the
+cheapest in money and the most expensive in everything else, and its claim risk
+spawns a real **Employee Relations case** onto the board, which drains Compliance
+and is invisible to every tower. The cheap option is not the cheap option.
+
+You cannot make the last person redundant.
 
 ## 7. Waves
 

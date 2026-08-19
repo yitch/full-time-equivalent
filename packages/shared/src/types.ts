@@ -373,6 +373,8 @@ export interface TowerEntity {
   targetId: EntityId | null
   /** Ticks until this tower despawns. -1 = permanent. Interns are temporary. */
   expiresIn: number
+  /** No headcount left to own this process, so it sits idle. Not the same as offline. */
+  unstaffed: boolean
 }
 
 export interface AbilityState {
@@ -433,6 +435,42 @@ export interface GroundLoot {
   ticks: number
 }
 
+/**
+ * Headcount. Towers consume people, not abstract slots, and automated processes
+ * consume fewer. Approval is a queue; removal is a cost.
+ */
+export interface HeadcountState {
+  /** Total FTE you are allowed to have. */
+  approved: number
+  /** Reqs working their way through Finance and the CFO. */
+  requisitions: Requisition[]
+  /** Heads on their way out, mid-consultation. */
+  exits: HeadcountExit[]
+  /** Budget drained last wave, kept for the HUD. */
+  lastSalary: number
+}
+
+export interface Requisition {
+  id: EntityId
+  /** Index into REQ_STAGES. */
+  stage: number
+  /** Waves remaining at the current stage. */
+  wavesLeft: number
+  /** Social Capital already spent. Not refunded on deferral. */
+  socialSpent: number
+  /** True once the CFO has sent it back at least once. */
+  deferred: boolean
+  raisedBy: PlayerId | null
+}
+
+export interface HeadcountExit {
+  id: EntityId
+  kind: 'attrition' | 'voluntary' | 'compulsory'
+  /** Ticks of consultation remaining before the head actually goes. */
+  ticks: number
+  totalTicks: number
+}
+
 export interface RunStats {
   resolved: number
   breached: number
@@ -470,6 +508,7 @@ export interface GameEvent {
     | 'revived'
     | 'interference'
     | 'stakeholder'
+    | 'headcount'
   at: Vec2
   text?: string
   amount?: number
@@ -511,8 +550,8 @@ export interface GameState {
   /** Global fire-rate multiplier from HRIS Go-Live. */
   overclockTicks: number
   overclockAmount: number
-  /** Maximum number of towers that may exist. Talent Acquisition raises this. */
-  towerSlots: number
+  /** Approved FTE, the pipeline of pending reqs, and exits in progress. */
+  headcount: HeadcountState
   /** Damage banked by a stored-damage ability, keyed by player. */
   storedDamage: Record<PlayerId, number>
   /** The enemy mirror of the classes: they attack towers, not the door. */
@@ -549,6 +588,9 @@ export type Intent =
   | { t: 'unequip'; slot: ArtifactSlot }
   | { t: 'discard'; artifactId: string }
   | { t: 'attack_move'; x: number; y: number }
+  | { t: 'raise_req' }
+  | { t: 'cancel_req'; id: EntityId }
+  | { t: 'remove_headcount'; kind: 'attrition' | 'voluntary' | 'compulsory' }
 
 export interface IntentEnvelope {
   playerId: PlayerId

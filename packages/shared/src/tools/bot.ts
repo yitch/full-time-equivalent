@@ -20,6 +20,8 @@ import {
   pointAt,
 } from '../content/index.js'
 import { artifactScore, spendTalent } from '../progression.js'
+import { HEADCOUNT_COST, requisitionCost, requisitionSetupCost } from '../content/index.js'
+import { headcountFree } from '../sim/headcount.js'
 import { TICK_HZ } from '../constants.js'
 import { applyIntent, createGame, step } from '../sim/index.js'
 import type { GameState, RoleId, TechId, TowerTypeId, Vec2 } from '../types.js'
@@ -103,10 +105,21 @@ function botSpend(state: GameState, tiles: Vec2[]): void {
     applyIntent(state, 'bot', { t: 'unlock', tech: id })
   }
 
+  // Raise a req when capacity is the thing stopping us, and we can still afford
+  // to make the case. Reqs take three waves, so the bot has to ask early.
+  if (
+    headcountFree(state) < 2 &&
+    state.headcount.requisitions.length < 2 &&
+    state.socialCapital > requisitionCost(state.headcount.approved) + 25 &&
+    state.budget > requisitionSetupCost(state.headcount.approved) + 200
+  ) {
+    applyIntent(state, 'bot', { t: 'raise_req' })
+  }
+
   // If capacity is full but we can afford something much better, replace the
   // weakest thing on the floor. A human would; a fair floor should too.
   const best = chooseTower(state)
-  if (best && state.towers.length >= state.towerSlots) {
+  if (best && headcountFree(state) < HEADCOUNT_COST[TOWERS[best]!.channel]) {
     const weakest = [...state.towers].sort((a, b) => (TOWERS[a.type]?.cost ?? 0) - (TOWERS[b.type]?.cost ?? 0))[0]
     if (weakest && (TOWERS[weakest.type]?.cost ?? 0) < (TOWERS[best]?.cost ?? 0) / 2) {
       applyIntent(state, 'bot', { t: 'sell', towerId: weakest.id })
@@ -114,7 +127,7 @@ function botSpend(state: GameState, tiles: Vec2[]): void {
   }
 
   let guard = 0
-  while (state.towers.length < state.towerSlots && guard++ < 40) {
+  while (guard++ < 40) {
     const tower = chooseTower(state)
     if (!tower) break
     const tile = tiles.find(

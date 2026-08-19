@@ -12,7 +12,7 @@ Read this file before your first edit. It is short on purpose.
 
 ```bash
 npm install
-npm test          # 67 tests. If these pass, the game works.
+npm test          # 89 tests. If these pass, the game works.
 npm run balance   # plays a full campaign headless and prints a per-wave table
 ```
 
@@ -50,6 +50,8 @@ someone actually emailed you.
 | Add/tune a talent tree | `packages/shared/src/content/talents.ts` | No |
 | Add an artifact base, affix or legendary | `packages/shared/src/content/artifacts.ts` | Only for a new `LegendaryPower` |
 | Add/tune a Stakeholder | `packages/shared/src/content/stakeholders.ts` | Only for a new `Interference` |
+| Tune headcount costs, salary, approval or exit routes | `packages/shared/src/content/headcount.ts` | No |
+| Change the approval pipeline or consultation rules | `packages/shared/src/sim/headcount.ts` | Yes |
 | Draw an animal | `packages/client/src/render/animals.ts` | No |
 | Tune XP, stats or loot rolls | `packages/shared/src/progression.ts` | Yes |
 | Change hero combat or a class passive | `packages/shared/src/sim/heroes.ts` | Yes |
@@ -83,6 +85,20 @@ automation) — that is expected and the test measures the whole run, not a wave
 All hero damage goes through `strike()` in `sim/heroes.ts`. Do not call
 `damageRequest` directly from an ability; you will silently skip the passive, the
 specialist multiplier, kill credit and the balance lever.
+
+## 3c. Headcount
+
+Towers consume **people**, not slots: `automation` costs 1 FTE to own, `process`
+costs 2. That table in `content/headcount.ts` is the game's automation argument
+in mechanical form — if you change it, you are changing the thesis, not a number.
+
+Going over headcount sets `unstaffed` on a tower rather than deleting it. Keep
+that distinction: `offline` means a maintenance window or a Stakeholder sitting
+on it; `unstaffed` means nobody is left to run it. They read differently to the
+player and they recover differently.
+
+`enforceHeadcount` runs every tick, so anything that changes the establishment is
+automatically reconciled. Do not try to keep the count by hand.
 
 ## 4. Hard constraints
 

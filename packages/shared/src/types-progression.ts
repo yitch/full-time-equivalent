@@ -346,6 +346,8 @@ export interface StakeholderEntity {
   bark: string
 }
 
+export type ExitKind = 'attrition' | 'voluntary' | 'compulsory'
+
 // ─────────────────────────────────────────────────────────────────── loot log
 
 export interface DropEvent {

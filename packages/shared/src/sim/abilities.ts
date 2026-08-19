@@ -203,6 +203,7 @@ function applyEffect(
           builtBy: player.id,
           targetId: null,
           expiresIn: -1,
+          unstaffed: false,
         })
         state.events.push({ kind: 'build', at: { x: tile.x + 0.5, y: tile.y + 0.5 }, text: 'Shipped' })
       }
@@ -358,7 +359,7 @@ function applyEffect(
     case 'summon_intern': {
       // Doubles as "Sign The Req": permanent slots plus the onboarding that follows.
       if (def.id === 'sign_the_req') {
-        state.towerSlots += def.amount ?? 2
+        state.headcount.approved += def.amount ?? 2
         for (let i = 0; i < 6; i++) spawnRequest(state, 'onboarding_packet', 2, 0, -i * 0.8)
         pushLog(state, `${player.name} signed the req. Six Onboarding Packets are already in the lane.`)
       } else {
@@ -372,6 +373,7 @@ function applyEffect(
           builtBy: player.id,
           targetId: null,
           expiresIn: Math.round((def.durationSeconds ?? 20) * TICK_HZ),
+          unstaffed: false,
         })
       }
       break

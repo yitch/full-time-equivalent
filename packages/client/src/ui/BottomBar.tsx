@@ -1,4 +1,15 @@
-import { PALETTE, ROLES, TICK_HZ, TOWERS, TOWER_IDS, getTech } from '@fte/shared'
+import {
+  HEADCOUNT_COST,
+  PALETTE,
+  ROLES,
+  TICK_HZ,
+  TOWERS,
+  TOWER_IDS,
+  effectiveHeadcount,
+  getTech,
+  headcountFree,
+  headcountUsed,
+} from '@fte/shared'
 import type { GameState, PlayerId, TowerTypeId } from '@fte/shared'
 
 const CHANNEL_COLOUR: Record<string, string> = {
@@ -18,6 +29,7 @@ export function BottomBar({
   onSelect,
   onOpenTech,
   onOpenSheet,
+  onOpenHeadcount,
   onStartWave,
 }: {
   state: GameState
@@ -26,6 +38,7 @@ export function BottomBar({
   onSelect: (id: TowerTypeId | null) => void
   onOpenTech: () => void
   onOpenSheet: () => void
+  onOpenHeadcount: () => void
   onStartWave: () => void
 }) {
   const me = localPlayerId ? state.players[localPlayerId] : null
@@ -45,19 +58,21 @@ export function BottomBar({
             const def = TOWERS[id]
             if (!def) return null
             const affordable = state.budget >= def.cost
-            const full = state.towers.length >= state.towerSlots
+            const full = headcountFree(state) < HEADCOUNT_COST[def.channel]
             return (
               <button
                 key={id}
                 className={`build-card${selected === id ? ' active' : ''}`}
                 disabled={!affordable || full}
-                title={`${def.flavour}\n\n${def.channel.toUpperCase()} · ${def.damage} dmg · ${def.range} tiles`}
+                title={`${def.flavour}\n\n${def.channel.toUpperCase()} · ${def.damage} dmg · ${def.range} tiles · ${HEADCOUNT_COST[def.channel]} FTE to own`}
                 onClick={() => onSelect(selected === id ? null : id)}
               >
                 <span className="ch" style={{ background: CHANNEL_COLOUR[def.channel] }} />
                 <div className="n pixel">{index + 1}</div>
                 <div className="nm">{def.name}</div>
-                <div className="cost">${def.cost}</div>
+                <div className="cost">
+                  ${def.cost} <span className="fte">{HEADCOUNT_COST[def.channel]} FTE</span>
+                </div>
               </button>
             )
           })}
@@ -82,7 +97,15 @@ export function BottomBar({
         </div>
 
         <div style={{ marginTop: 6, fontSize: 9, color: 'var(--paper-dim)' }}>
-          {state.towers.length}/{state.towerSlots} capacity used · right-click to cancel a placement
+          <button className="hc-chip" onClick={onOpenHeadcount} title="The establishment (H)">
+            HEADCOUNT {headcountUsed(state)}/{effectiveHeadcount(state)} FTE
+            {headcountFree(state) <= 0 && <b> · FULL</b>}
+            {state.headcount.requisitions.length > 0 && (
+              <em> · {state.headcount.requisitions.length} req pending</em>
+            )}
+            {state.headcount.exits.length > 0 && <i> · {state.headcount.exits.length} leaving</i>}
+          </button>{' '}
+          · right-click to cancel a placement
         </div>
       </div>
 
