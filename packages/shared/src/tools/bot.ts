@@ -7,12 +7,24 @@
  * the early game is overtuned; if it sails through Open Enrollment untouched,
  * the boss is not doing its job.
  */
-import { LANES, TECH, TOWERS, TOWER_IDS, WAVES, isBuildable, pointAt } from '../content/index.js'
+import {
+  LANES,
+  REQUESTS,
+  ROLES,
+  TALENT_TREES,
+  TECH,
+  TOWERS,
+  TOWER_IDS,
+  WAVES,
+  isBuildable,
+  pointAt,
+} from '../content/index.js'
+import { artifactScore, spendTalent } from '../progression.js'
 import { TICK_HZ } from '../constants.js'
 import { applyIntent, createGame, step } from '../sim/index.js'
 import type { GameState, RoleId, TechId, TowerTypeId, Vec2 } from '../types.js'
 
-const ROLES_IN_LOBBY: RoleId[] = ['hris', 'travel', 'payroll']
+const ROLES_IN_LOBBY: RoleId[] = ['puffin', 'rhino', 'viper']
 
 /** Tiles the bot will try, in preference order: near lanes, spread across the floor. */
 function candidateTiles(): Vec2[] {
@@ -127,11 +139,49 @@ function botFight(state: GameState): void {
   if (state.tick % 6 !== 0) return
 
   for (const player of Object.values(state.players)) {
-    let target = null as null | { pos: Vec2; progress: number }
-    for (const req of state.requests) {
-      if (req.hp <= 0 || !req.revealed) continue
-      if (!target || req.progress > target.progress) target = { pos: req.pos, progress: req.progress }
+    if (player.hero.downedTicks > 0) continue
+
+    // Priority order, which is also the advice you would give a new player:
+    //   1. Stakeholders — they degrade the machine and only a person can stop them
+    //   2. Compliance threats — quiet, slow, and they end runs
+    //   3. Whatever is closest to the door
+    let target: { pos: { x: number; y: number } } | null = null
+
+    let bestStake = Infinity
+    for (const s of state.stakeholders) {
+      if (s.hp <= 0) continue
+      const d = Math.hypot(s.pos.x - player.pos.x, s.pos.y - player.pos.y)
+      if (d < bestStake) {
+        bestStake = d
+        target = s
+      }
     }
+
+    if (!target) {
+      let bestCompliance = -Infinity
+      for (const req of state.requests) {
+        if (req.hp <= 0) continue
+        const def = REQUESTS[req.type]
+        if (!def?.complianceDamage) continue
+        if (!req.revealed && !ROLES[player.role!]!.seesStealth) continue
+        if (req.progress > bestCompliance) {
+          bestCompliance = req.progress
+          target = req
+        }
+      }
+    }
+
+    if (!target) {
+      let leading = -Infinity
+      for (const req of state.requests) {
+        if (req.hp <= 0 || !req.revealed) continue
+        if (req.progress > leading) {
+          leading = req.progress
+          target = req
+        }
+      }
+    }
+
     if (target) {
       const dx = target.pos.x - player.pos.x
       const dy = target.pos.y - player.pos.y
@@ -141,13 +191,29 @@ function botFight(state: GameState): void {
       applyIntent(state, player.id, { t: 'move', x: 0, y: 0 })
     }
 
-    // Total Rewards' channel breaks on movement, so the bot never casts it.
     for (const key of ['Q', 'W', 'E'] as const) {
       applyIntent(state, player.id, { t: 'ability', key })
     }
+
+    // Spend talent points down the lean-in branch, and wear whatever drops.
+    if (player.hero.talentPoints > 0 && player.role) {
+      const tree = TALENT_TREES[player.role]
+      if (tree) {
+        for (const node of tree.nodes) {
+          if (spendTalent(player.hero, player.role, node.id) === null) break
+        }
+      }
+    }
+    for (const item of [...player.hero.bag]) {
+      const current = player.hero.equipment[item.slot]
+      if (!current || artifactScore(item) > artifactScore(current)) {
+        applyIntent(state, player.id, { t: 'equip', artifactId: item.id })
+      } else {
+        applyIntent(state, player.id, { t: 'discard', artifactId: item.id })
+      }
+    }
   }
 }
-
 
 export interface RunResult {
   state: GameState

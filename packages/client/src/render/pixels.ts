@@ -11,6 +11,8 @@
  * sheet. That is the entire reason we do it this way.
  */
 
+import { ANIMAL_IDS, ANIMAL_PC, ANIMAL_STAKEHOLDER } from './animals.js'
+
 export interface PixelSprite {
   key: Record<string, string | null>
   rows: string[]
@@ -444,7 +446,102 @@ export const CHRO_DOOR = sprite([
   '..############..',
 ])
 
+// The fourteen animals, composed from heads + a shared body in animals.ts.
+const ANIMAL_SPRITES: Record<string, PixelSprite> = {}
+for (const id of ANIMAL_IDS) {
+  ANIMAL_SPRITES[`pc_${id}`] = sprite(ANIMAL_PC[id]!)
+  ANIMAL_SPRITES[`sh_${id}`] = sprite(ANIMAL_STAKEHOLDER[id]!)
+}
+
+/** Dropped artifacts, 12x12, distinguished by silhouette not colour. */
+export const IT_BADGE = sprite([
+  '....######..',
+  '....#pppp#..',
+  '....#pCCp#..',
+  '....#pppp#..',
+  '....##oo##..',
+  '.....#cc#...',
+  '....######..',
+  '....#cccc#..',
+  '....#cCCc#..',
+  '....#cccc#..',
+  '....######..',
+  '............',
+])
+
+export const IT_LAPTOP = sprite([
+  '............',
+  '..########..',
+  '..#eeeeee#..',
+  '..#epppee#..',
+  '..#eeeeee#..',
+  '..########..',
+  '.##########.',
+  '.#PPPPPPPP#.',
+  '.#PppppppP#.',
+  '.##########.',
+  '............',
+  '............',
+])
+
+export const IT_DOC = sprite([
+  '..########..',
+  '..#pppppp#..',
+  '..#oooppp#..',
+  '..#pppppp#..',
+  '..#oooooo#..',
+  '..#pppppp#..',
+  '..#ooopppp..',
+  '..#pppppp#..',
+  '..#yyypppp..',
+  '..#pppppp#..',
+  '..########..',
+  '............',
+])
+
+export const IT_MUG = sprite([
+  '............',
+  '..######....',
+  '..#mmmm#....',
+  '..#mMMm#.##.',
+  '..#mmmm#.#c#',
+  '..#mMMm#.#c#',
+  '..#mmmm#.##.',
+  '..#mMMm#....',
+  '..######....',
+  '...####.....',
+  '............',
+  '............',
+])
+
+export const IT_CHAIR = sprite([
+  '...######...',
+  '...#cccc#...',
+  '...#cCCc#...',
+  '...#cccc#...',
+  '...#cccc#...',
+  '...######...',
+  '..########..',
+  '..#cccccc#..',
+  '..########..',
+  '.....##.....',
+  '...##oo##...',
+  '..o..oo..o..',
+])
+
 export const SPRITES = {
+  ...ANIMAL_SPRITES,
+  it_badge: IT_BADGE,
+  it_laptop: IT_LAPTOP,
+  it_monitor: IT_LAPTOP,
+  it_headset: IT_LAPTOP,
+  it_phone: IT_LAPTOP,
+  it_doc: IT_DOC,
+  it_mug: IT_MUG,
+  it_can: IT_MUG,
+  it_chair: IT_CHAIR,
+  it_desk: IT_CHAIR,
+  it_board: IT_DOC,
   pc_base: PC_BASE,
   req_base: REQ_BASE,
   req_tired: REQ_TIRED,

@@ -29,7 +29,7 @@ Client on **http://localhost:5173**, game server on **ws://localhost:8787**.
 Open the client, enter a name, get a 4-letter room code, share it. Up to five.
 
 ```bash
-npm test        # 36 tests — sim, content integrity, and balance regression
+npm test        # 67 tests — sim, classes, progression, loot, and balance regression
 npm run balance # headless full-campaign report, no browser needed
 npm run typecheck
 ```
@@ -50,16 +50,56 @@ Every mechanic is lifted from how HR shared services actually works:
 
 Sources are cited in the design bible: [`docs/specs/2026-08-19-full-time-equivalent-design.md`](docs/specs/2026-08-19-full-time-equivalent-design.md).
 
-## The six roles
+## You play one of the dangerous animals
 
-| Role | Identity | The catch |
+Not a hero of the people function — one of the fourteen documented corporate
+dysfunctions. **Every class's flaw is its strongest ability and its price.**
+
+| Animal | Passive | What it costs you |
 |---|---|---|
-| **HRBP** | Best buffs, only class that sees ER cases | Loses a random ability every wave. Someone booked you into a meeting. |
-| **Payroll** | Hard-deletes payroll problems | Locked to one problem. The cutoff is the cutoff. |
-| **Talent** | Grants tower capacity | Every good thing you do also spawns Onboarding Packets |
-| **Total Rewards** | 60-second channelled board-wide nuke | Interrupted if you move. You will be interrupted. |
-| **HRIS** | Buffs all automation, repairs towers | Your ultimate ends in a blackout that disables every automation tower |
-| **Travel & Claims** | Nobody picks this | Worst stats until wave 6. The **only** counter to Expense Claims, which nothing else in the game can damage. |
+| **HIPPO** — Highest Paid Person's Opinion | Damage ignores every resistance | 55% less Social Capital. Being obeyed is not being right. |
+| **ZEBRA** — Zero Evidence But Really Arrogant | ×2 damage at full health | ×0.5 once anything is damaged. Nobody re-reads your slide. |
+| **WOLF** — Works On Latest Fire | +110% vs the newest arrivals | −35% vs everything older. You do not do backlog. |
+| **RHINO** — Really Here In Name Only | +170% damage | Zero output for the first 18 seconds of every wave. |
+| **SEAGULL** — Amuses, Glides, Unloads Loudly & Leaves | Fastest class in the game | Stand still for 2 seconds and you teleport at random. |
+| **GOOSE** — Guessing Overly Scheduling Estimates | Cooldowns 45% shorter | 30% of abilities simply do not happen. |
+| **PUFFIN** — Plans Unending Feature Factory Initiatives | +2 capacity, cheaper towers | Every tower you build spawns more work. |
+| **PUMA** — Promotes Unusually Mendacious Assumptions | Can roll ×2.5 | Can also roll ×0.25. Every hit. |
+| **COBRA** — Cognitive Bias Related Assertions | +22% per prior kill of that type | Resets each wave. Blind to anything new. |
+| **YAK** — Yet Another KPI | Passive Social Capital income | Towers near you deal 22% less. Everyone is reporting. |
+| **DONKEY** — Data Only, No Knowledge, Expertise Or Why | Triple attack speed | One third damage. Volume is the whole strategy. |
+| **MOUSE** — Avoids firm decisions | Takes 55% less, ignored by requests | Deals 35% less. Nothing sticks to you, including outcomes. |
+| **VIPER** — Vindictive Person Endangering Results | Permanently stronger with every breach | You need the team to fail. |
+| **DODO** — Dangerously Outdated Opinions | +140% damage | Cooldown reduction does nothing and your towers never upgrade. |
+
+## Heroes on the floor, and levels that stick
+
+Heroes are deployed units, not cursors. They walk the floor, auto-attack, take
+damage from anything they stand next to, and can be **downed** — a colleague
+standing over you revives you four times faster than waiting.
+
+They also **level**. XP is shared across the team including tower kills, one
+talent point per level, three branches per class that always mean the same three
+things: **lean in** to the dysfunction, **grow out** of it, or **weaponise** it.
+Levelling to 30 gives 29 points and maxing everything costs 33, so the build is a
+choice.
+
+Elites and Stakeholders drop **corporate artifacts** — five slots, five rarities
+named in performance-review language (*Standard Issue* → *Career Defining*),
+random affixes scaled by wave. Five legendaries each bend one rule; *Garden Leave
+Letter* means you cannot be downed, only removed from the building.
+
+Account level, per-animal levels and a 20-item stash persist between runs against
+a `localStorage` id. No sign-up.
+
+## The Stakeholders
+
+The same fourteen animals, as enemies — and they do not race you to the CHRO
+door. They walk to your **towers** and interfere: the HiPPO overrules them, the
+Absent Approver sits on one until it goes offline, the Grudge removes one
+permanently, the Visiting Executive unloads and leaves. You cannot out-build a
+Stakeholder. Someone has to physically go and deal with it, which is the entire
+reason the hero layer exists.
 
 ## Architecture
 
@@ -86,7 +126,12 @@ alike, and covers where to add content without touching the engine.
 ## Status
 
 Playable vertical slice: one map, 3 lanes, 13 request types, 11 towers, 17 tech
-nodes, 6 roles, 8 waves plus the Open Enrollment boss, networked co-op.
+nodes, **14 animal classes** with talent trees, **14 Stakeholder enemies**,
+hero levelling and affixed loot, profile persistence, 8 waves plus the Open
+Enrollment boss, networked co-op for 1–5.
 
-Not built yet: persistence, audio, maps 2+, and the four non-Open-Enrollment
-bosses (designed in the bible, not implemented).
+**67 tests**, including a balance regression suite that plays the whole campaign
+headless in under a second and fails if processes stop out-damaging people.
+
+Not built yet: audio, maps 2+, the four non-Open-Enrollment bosses, crafting,
+set bonuses, and a browsable stash between runs.

@@ -77,6 +77,8 @@ export const WAVES: WaveDef[] = [
     ],
     budgetReward: 200,
     tailSeconds: 14,
+    // First Stakeholder. Deliberately the slow, harmless-looking one.
+    stakeholders: [{ at: 12, type: 'rhino', lane: 1 }],
   },
   {
     index: 5,
@@ -94,6 +96,10 @@ export const WAVES: WaveDef[] = [
     ],
     budgetReward: 230,
     tailSeconds: 16,
+    stakeholders: [
+      { at: 8, type: 'hippo', lane: 0 },
+      { at: 22, type: 'goose', lane: 2 },
+    ],
   },
   {
     index: 6,
@@ -111,6 +117,11 @@ export const WAVES: WaveDef[] = [
     ],
     budgetReward: 270,
     tailSeconds: 18,
+    stakeholders: [
+      { at: 6, type: 'seagull', lane: 1 },
+      { at: 18, type: 'yak', lane: 0 },
+      { at: 30, type: 'zebra', lane: 2 },
+    ],
   },
   {
     index: 7,
@@ -131,6 +142,11 @@ export const WAVES: WaveDef[] = [
     maintenanceWindows: [
       { at: 10, seconds: 12 },
       { at: 26, seconds: 14 },
+    ],
+    stakeholders: [
+      { at: 4, type: 'viper', lane: 1 },
+      { at: 20, type: 'dodo', lane: 0 },
+      { at: 32, type: 'donkey', lane: 2 },
     ],
   },
   {
@@ -165,6 +181,19 @@ export const WAVES: WaveDef[] = [
     budgetReward: 500,
     tailSeconds: 25,
     maintenanceWindows: [{ at: 58, seconds: 10 }],
+    // Open Enrollment brings the whole zoo. This is the exam.
+    stakeholders: [
+      { at: 10, type: 'hippo', lane: 1 },
+      { at: 18, type: 'puma', lane: 0 },
+      { at: 26, type: 'wolf', lane: 2 },
+      { at: 34, type: 'seagull', lane: 1 },
+      { at: 42, type: 'puffin', lane: 0 },
+      { at: 50, type: 'mouse', lane: 2 },
+      { at: 58, type: 'cobra', lane: 1 },
+      { at: 68, type: 'viper', lane: 0 },
+      { at: 76, type: 'rhino', lane: 2 },
+      { at: 84, type: 'dodo', lane: 1 },
+    ],
   },
 ]
 

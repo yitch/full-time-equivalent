@@ -1,12 +1,27 @@
-import type { ClientMessage, GameState, Intent, PlayerId, ServerMessage } from '@fte/shared'
+import type { ClientMessage, GameState, Intent, PlayerId, Profile, ServerMessage } from '@fte/shared'
 
 export type NetStatus = 'idle' | 'connecting' | 'open' | 'closed' | 'error'
 
 export interface NetListeners {
   onState: (state: GameState) => void
+  onProfile: (profile: Profile) => void
   onWelcome: (playerId: PlayerId, roomCode: string) => void
   onError: (message: string) => void
   onStatus: (status: NetStatus) => void
+}
+
+/**
+ * The profile id is just a random string in localStorage. No accounts, no
+ * email, no password — enough to make progression persist, and nothing more.
+ */
+export function getProfileId(): string {
+  const KEY = 'fte.profileId'
+  let id = localStorage.getItem(KEY)
+  if (!id) {
+    id = `p_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
+    localStorage.setItem(KEY, id)
+  }
+  return id
 }
 
 const DEFAULT_URL =
@@ -29,12 +44,13 @@ export class NetClient {
 
   connect(name: string, roomCode?: string, url: string = DEFAULT_URL): void {
     this.listeners.onStatus('connecting')
+    const profileId = getProfileId()
     const socket = new WebSocket(url)
     this.socket = socket
 
     socket.addEventListener('open', () => {
       this.listeners.onStatus('open')
-      this.raw({ t: 'hello', name, ...(roomCode ? { roomCode } : {}) })
+      this.raw({ t: 'hello', name, profileId, ...(roomCode ? { roomCode } : {}) })
       for (const message of this.outbox) this.raw(message)
       this.outbox = []
     })
@@ -46,7 +62,9 @@ export class NetClient {
       } catch {
         return
       }
-      if (message.t === 'welcome') {
+      if (message.t === 'profile') {
+        this.listeners.onProfile(message.profile)
+      } else if (message.t === 'welcome') {
         this.listeners.onWelcome(message.playerId, message.roomCode)
         this.listeners.onState(message.state)
       } else if (message.t === 'snapshot') {

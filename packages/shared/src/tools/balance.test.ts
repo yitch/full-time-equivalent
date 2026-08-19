@@ -36,7 +36,7 @@ describe('campaign balance', () => {
   })
 
   it('doing nothing loses: showing up is not a strategy', () => {
-    const { state } = playRun(999, ['hrbp'], { passive: true })
+    const { state } = playRun(999, ['hippo'], { passive: true })
     expect(state.phase).toBe('gameover')
     expect(state.morale).toBe(0)
   })

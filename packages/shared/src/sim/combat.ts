@@ -1,5 +1,6 @@
 import { TICK_HZ } from '../constants.js'
 import { ESCALATION_BARKS, SPAWN_BARKS, getRequest, getTower, laneLength, pointAt } from '../content/index.js'
+import { grantXp, rollArtifact } from '../progression.js'
 import { chance, createRng, next, pick } from '../rng.js'
 import type {
   Channel,
@@ -86,23 +87,28 @@ export function damageRequest(
   channel: Channel,
   sourceRole?: RoleId,
   allowChain = true,
+  /** HIPPO's Seniority: evidence-shaped defences do not apply to rank. */
+  ignoreResist = false,
 ): number {
   if (req.hp <= 0) return 0
   const def = getRequest(req.type)
   const quirks = def.quirks ?? []
 
   if (channel === 'specialist' && (!sourceRole || def.specialistRole !== sourceRole)) return 0
-  if (channel === 'process' && quirks.includes('immune_process')) return 0
+  if (channel === 'process' && quirks.includes('immune_process') && !ignoreResist) return 0
 
-  if (channel === 'automation' && quirks.includes('heals_from_automation')) {
+  if (channel === 'automation' && quirks.includes('heals_from_automation') && !ignoreResist) {
     const healed = Math.min(def.hp - req.hp, rawAmount * 0.5)
     req.hp = Math.min(req.maxHp, req.hp + healed)
     state.events.push({ kind: 'bark', at: { ...req.pos }, text: 'thank you!', requestType: req.type })
     return -healed
   }
 
-  let amount = rawAmount * def.resist[channel]
+  let amount = rawAmount * (ignoreResist ? 1 : def.resist[channel])
   if (hasStatus(req, 'tracked')) amount *= TRACKED_BONUS
+  for (const status of req.statuses) {
+    if (status.kind === 'marked') amount *= 1 + (status.amount ?? 0.4)
+  }
   if (quirks.includes('reflects')) amount *= 0.7
 
   if (amount <= 0) return 0
@@ -177,11 +183,44 @@ export function resolveRequest(state: GameState, req: RequestEntity, channel: Ch
   const def = getRequest(req.type)
   req.hp = 0
 
+  // Elites drop. Trash does not, or the floor becomes unreadable.
+  if (def.elite) {
+    const { rng, commit } = rngFor(state)
+    const artifact = rollArtifact(rng, state.waveIndex + 1, 0)
+    commit()
+    state.loot.push({
+      id: state.nextEntityId++,
+      artifact,
+      pos: { ...req.pos },
+      ticks: TICK_HZ * 45,
+    })
+    state.events.push({ kind: 'drop', at: { ...req.pos }, text: artifact.name })
+  }
+
   const laneFraction = req.progress / Math.max(1, laneLength(req.lane))
   const deflected = channel === 'automation' && laneFraction <= DEFLECTION_ZONE
 
   state.budget += def.bounty
   state.stats.resolved++
+
+  // XP is shared across the whole team, including kills the towers made.
+  // The alternative — XP only for the hero who landed the blow — means heroes
+  // barely level in the waves where the towers are working, which punishes
+  // exactly the play the rest of the game is trying to teach.
+  const xp = 6 + def.hp * 0.18 + (def.elite ? 60 : 0)
+  for (const player of Object.values(state.players)) {
+    if (!player.connected || !player.role) continue
+    const levels = grantXp(player.hero, player.role, xp)
+    if (levels > 0) {
+      state.events.push({
+        kind: 'levelup',
+        at: { ...player.pos },
+        playerId: player.id,
+        amount: player.hero.level,
+        text: `LEVEL ${player.hero.level}`,
+      })
+    }
+  }
 
   if (!req.escalated) {
     let sc = def.socialCapital

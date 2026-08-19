@@ -12,7 +12,7 @@ Read this file before your first edit. It is short on purpose.
 
 ```bash
 npm install
-npm test          # 36 tests. If these pass, the game works.
+npm test          # 67 tests. If these pass, the game works.
 npm run balance   # plays a full campaign headless and prints a per-wave table
 ```
 
@@ -46,7 +46,14 @@ someone actually emailed you.
 | Add/tune an inbound request | `packages/shared/src/content/requests.ts` | No |
 | Add/tune a tower | `packages/shared/src/content/towers.ts` | No |
 | Add a tech node | `packages/shared/src/content/tech.ts` | No |
-| Add/tune a role or ability | `packages/shared/src/content/roles.ts` | Only for a new `AbilityKind` |
+| Add/tune an animal class or ability | `packages/shared/src/content/roles.ts` | Only for a new `AbilityKind` |
+| Add/tune a talent tree | `packages/shared/src/content/talents.ts` | No |
+| Add an artifact base, affix or legendary | `packages/shared/src/content/artifacts.ts` | Only for a new `LegendaryPower` |
+| Add/tune a Stakeholder | `packages/shared/src/content/stakeholders.ts` | Only for a new `Interference` |
+| Draw an animal | `packages/client/src/render/animals.ts` | No |
+| Tune XP, stats or loot rolls | `packages/shared/src/progression.ts` | Yes |
+| Change hero combat or a class passive | `packages/shared/src/sim/heroes.ts` | Yes |
+| Change Stakeholder behaviour | `packages/shared/src/sim/stakeholders.ts` | Yes |
 | Write a wave | `packages/shared/src/content/waves.ts` | No |
 | Add speech bubbles / ticker lines | `packages/shared/src/content/barks.ts` | No |
 | Change the palette | `packages/shared/src/content/palette.ts` | No |
@@ -58,6 +65,24 @@ someone actually emailed you.
 **Content files are data.** They contain no logic. Behaviour that data needs is
 expressed as a `quirk` string handled in `sim/combat.ts`. Adding a quirk is the
 only reason a content change should touch the engine.
+
+## 3b. Two rules specific to the class and hero layers
+
+**Every class passive must cut both ways.** HIPPO ignores resistances *and*
+earns almost no Social Capital. RHINO is enormous *and* does nothing for the
+first eighteen seconds. If your new animal's passive only ever helps, it is a
+bonus, not a dysfunction — rewrite it or cut it.
+
+**Heroes must not out-damage processes over a full run.** There is one lever for
+this, `HERO_OUTPUT_SCALE` in `sim/heroes.ts`, and a balance test that fails with
+*"the game is arguing against itself"* when it slips. Turn the lever down rather
+than nerfing fourteen stat blocks by hand. Waves 4, 5 and 8 are *designed* to
+invert the ratio (expenses and ER cases are role-locked; wave 8 kills
+automation) — that is expected and the test measures the whole run, not a wave.
+
+All hero damage goes through `strike()` in `sim/heroes.ts`. Do not call
+`damageRequest` directly from an ability; you will silently skip the passive, the
+specialist multiplier, kill credit and the balance lever.
 
 ## 4. Hard constraints
 
@@ -71,6 +96,10 @@ only reason a content change should touch the engine.
   mutating `GameState` in `packages/client`, stop — that is how desyncs start.
 - **No binary assets.** All art is pixel maps in `pixels.ts`. Sprites are text.
 - **No new runtime dependencies** without a note in the PR saying why.
+- **Profiles are the only persistent state**, written by the server to
+  `.data/profiles.json`. The sim never reads or writes them; `bankRun` in
+  `packages/server/src/profiles.ts` is the single point where a run becomes
+  permanent progress.
 
 ## 5. Sprites
 
@@ -79,7 +108,14 @@ transparent, `'c'` is the instance accent colour, `'C'` its darker tone. Add the
 sprite to `SPRITES` at the bottom of `pixels.ts` and point at it from
 `REQUEST_LOOK` / `TOWER_LOOK` / `PROP_LOOK` in `sprites.ts`.
 
-Requests are 12×12, players 12×16, towers and props 16×16.
+Requests are 12×12, towers and props 16×16, artifacts 12×12.
+
+**The animals are different.** Each is a 14×9 *head plate* in
+`client/src/render/animals.ts`, composed onto a shared 14×9 body (`BODY` for the
+playable class, `SUIT` for its Stakeholder mirror) to make a 14×18 sprite. Adding
+an animal means adding one head; the body and the Stakeholder variant come free.
+Sharing the body is deliberate — they all work here, they all wear the same
+lanyard, and the head is the only thing that distinguishes them.
 
 Palette rules, which are the whole art direction:
 - never pure white, never pure black

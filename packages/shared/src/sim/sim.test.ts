@@ -6,13 +6,16 @@ import {
   applyIntent,
   createGame,
   damageRequest,
+  incomingMultiplier,
+  passiveMultiplier,
   setRole,
   spawnRequest,
   step,
 } from './index.js'
+import { getRole } from '../content/index.js'
 import type { GameState } from '../types.js'
 
-function gameWithPlayer(role: Parameters<typeof setRole>[2] = 'hrbp'): GameState {
+function gameWithPlayer(role: Parameters<typeof setRole>[2] = 'hippo'): GameState {
   const state = createGame(20260819)
   addPlayer(state, 'p1', 'Tester')
   setRole(state, 'p1', role)
@@ -63,7 +66,7 @@ describe('content integrity', () => {
 
 describe('the combat model', () => {
   it('automation cannot touch an Expense Claim — this is the whole Travel & Claims joke', () => {
-    const state = gameWithPlayer('travel')
+    const state = gameWithPlayer('rhino')
     const claim = spawnRequest(state, 'expense_claim', 2)
     const before = claim.hp
     damageRequest(state, claim, 500, 'automation')
@@ -71,15 +74,15 @@ describe('the combat model', () => {
   })
 
   it('Travel & Claims multiplies against Expense Claims where nobody else can', () => {
-    const state = gameWithPlayer('travel')
+    const state = gameWithPlayer('rhino')
     const a = spawnRequest(state, 'expense_claim', 2)
     const b = spawnRequest(state, 'expense_claim', 2)
 
-    const asSpecialist = damageRequest(state, a, 20, 'specialist', 'travel')
-    const asPayroll = damageRequest(state, b, 20, 'specialist', 'payroll')
+    const asSpecialist = damageRequest(state, a, 20, 'specialist', 'rhino')
+    const asWolf = damageRequest(state, b, 20, 'specialist', 'wolf')
 
     expect(asSpecialist).toBeGreaterThan(40)
-    expect(asPayroll).toBe(0)
+    expect(asWolf).toBe(0)
   })
 
   it('a ticketing TRACKED status makes everything else hit harder', () => {
@@ -112,14 +115,14 @@ describe('the combat model', () => {
   })
 
   it('Expense Claims split exactly once, and Receipt Required stops it', () => {
-    const splitting = gameWithPlayer('travel')
+    const splitting = gameWithPlayer('rhino')
     const a = spawnRequest(splitting, 'expense_claim', 2)
     damageRequest(splitting, a, 300, 'process')
     expect(splitting.requests.length).toBe(2)
     damageRequest(splitting, a, 10, 'process')
     expect(splitting.requests.length).toBe(2)
 
-    const blocked = gameWithPlayer('travel')
+    const blocked = gameWithPlayer('rhino')
     const b = spawnRequest(blocked, 'expense_claim', 2)
     b.splitBlocked = true
     damageRequest(blocked, b, 300, 'process')
@@ -154,7 +157,7 @@ describe('social capital is paid for quality, never for volume', () => {
 
 describe('escalation', () => {
   it('escalates at SLA expiry and a payroll cutoff doubles instead of breaching', () => {
-    const state = gameWithPlayer('payroll')
+    const state = gameWithPlayer('wolf')
     state.phase = 'wave'
     const req = spawnRequest(state, 'payroll_discrepancy', 0)
     req.slaTicks = 1
@@ -241,46 +244,65 @@ describe('build rules and the tech gate', () => {
 })
 
 describe('roles', () => {
-  it('HRBP loses exactly one ability at the start of every wave', () => {
-    const state = gameWithPlayer('hrbp')
-    applyIntent(state, 'p1', { t: 'ready', value: true })
-    step(state)
-    state.phaseTicks = 1
-    step(state)
-    const disabled = state.players.p1!.abilities.filter((a) => a.disabled)
-    expect(disabled.length).toBe(1)
+  it('RHINO contributes nothing for the first 18 seconds, then a great deal', () => {
+    const state = gameWithPlayer('rhino')
+    state.phase = 'wave'
+    const player = state.players.p1!
+
+    state.waveTick = 5 * TICK_HZ
+    expect(passiveMultiplier(state, player, null)).toBe(0)
+
+    state.waveTick = 25 * TICK_HZ
+    expect(passiveMultiplier(state, player, null)).toBeGreaterThan(2)
+  })
+
+  it('HIPPO ignores resistances entirely — rank is not evidence', () => {
+    const state = gameWithPlayer('hippo')
+    const claim = spawnRequest(state, 'expense_claim', 2)
+    const before = claim.hp
+    // Automation cannot touch an expense claim; seniority does not care.
+    damageRequest(state, claim, 50, 'automation', undefined, true, true)
+    expect(claim.hp).toBeLessThan(before)
+  })
+
+  it('MOUSE is ignored by requests and takes far less damage', () => {
+    const state = gameWithPlayer('mouse')
+    const player = state.players.p1!
+    expect(incomingMultiplier(player)).toBeLessThan(0.6)
+    expect(getRole('mouse').ignoredByRequests).toBe(true)
   })
 
   it('a second player on the same role takes an unclear-ownership penalty', () => {
-    const state = gameWithPlayer('payroll')
+    const state = gameWithPlayer('wolf')
     addPlayer(state, 'p2', 'Also Payroll')
-    setRole(state, 'p2', 'payroll')
+    setRole(state, 'p2', 'wolf')
     expect(state.players.p1!.ownershipPenalty).toBe(1)
     expect(state.players.p2!.ownershipPenalty).toBeLessThan(1)
   })
 
-  it('PER DIEM scales with the number of live Expense Claims', () => {
-    const lean = gameWithPlayer('travel')
-    lean.phase = 'wave'
-    const lonely = spawnRequest(lean, 'policy_question', 0)
-    applyIntent(lean, 'p1', { t: 'ability', key: 'R' })
-    const leanDamage = lonely.maxHp - lonely.hp
-
-    const rich = gameWithPlayer('travel')
-    rich.phase = 'wave'
-    const target = spawnRequest(rich, 'policy_question', 0)
-    for (let i = 0; i < 5; i++) spawnRequest(rich, 'expense_claim', 2)
-    applyIntent(rich, 'p1', { t: 'ability', key: 'R' })
-    const richDamage = target.maxHp - target.hp
-
-    expect(richDamage).toBeGreaterThan(leanDamage * 2)
+  it('ZEBRA doubles damage on first contact and halves it afterwards', () => {
+    const state = gameWithPlayer('zebra')
+    const player = state.players.p1!
+    const fresh = spawnRequest(state, 'policy_question', 0)
+    expect(passiveMultiplier(state, player, fresh)).toBe(2)
+    fresh.hp -= 1
+    expect(passiveMultiplier(state, player, fresh)).toBe(0.5)
   })
 
-  it('the comp cycle is interrupted the moment Total Rewards moves', () => {
-    const state = gameWithPlayer('rewards')
+  it('VIPER grows permanently stronger every time the team fails', () => {
+    const state = gameWithPlayer('viper')
+    const player = state.players.p1!
+    const target = spawnRequest(state, 'policy_question', 0)
+    const before = passiveMultiplier(state, player, target)
+    state.breachedTypes.push('policy_question', 'policy_question')
+    expect(passiveMultiplier(state, player, target)).toBeGreaterThan(before)
+  })
+
+  it('a channelled ultimate is interrupted the moment the hero moves', () => {
+    const state = gameWithPlayer('donkey')
     state.phase = 'wave'
     expect(applyIntent(state, 'p1', { t: 'ability', key: 'R' })).toBeNull()
-    const slot = state.players.p1!.abilities.find((a) => a.id === 'comp_cycle')!
+    const slot = state.players.p1!.abilities.find((a) => a.channelling >= 0 && a.id === 'full_extract')!
     expect(slot.channelling).toBeGreaterThan(0)
     applyIntent(state, 'p1', { t: 'move', x: 1, y: 0 })
     step(state)
@@ -293,7 +315,7 @@ describe('determinism', () => {
     const run = () => {
       const state = createGame(777)
       addPlayer(state, 'p1', 'A')
-      setRole(state, 'p1', 'hris')
+      setRole(state, 'p1', 'puffin')
       applyIntent(state, 'p1', { t: 'ready', value: true })
       for (let i = 0; i < 1200; i++) {
         if (i === 40) applyIntent(state, 'p1', { t: 'build', tower: 'intranet', tile: { x: 12, y: 12 } })
@@ -309,7 +331,7 @@ describe('determinism', () => {
     const run = (seed: number) => {
       const state = createGame(seed)
       addPlayer(state, 'p1', 'A')
-      setRole(state, 'p1', 'hris')
+      setRole(state, 'p1', 'puffin')
       applyIntent(state, 'p1', { t: 'ready', value: true })
       for (let i = 0; i < 1200; i++) step(state)
       return JSON.stringify({ ...state, events: [], seed: 0, rngState: 0 })
@@ -322,7 +344,7 @@ describe('a whole wave, headless', () => {
   it('wave 1 resolves to a steering phase and does not hang', () => {
     const state = createGame(42)
     addPlayer(state, 'p1', 'Solo')
-    setRole(state, 'p1', 'hris')
+    setRole(state, 'p1', 'puffin')
     applyIntent(state, 'p1', { t: 'ready', value: true })
     state.budget = 2000
     step(state)
@@ -348,7 +370,7 @@ describe('a whole wave, headless', () => {
   it('an undefended run loses morale and ends — doing nothing is not a strategy', () => {
     const state = createGame(9)
     addPlayer(state, 'p1', 'Nobody')
-    setRole(state, 'p1', 'rewards')
+    setRole(state, 'p1', 'donkey')
     applyIntent(state, 'p1', { t: 'ready', value: true })
     step(state)
     applyIntent(state, 'p1', { t: 'start_wave' })

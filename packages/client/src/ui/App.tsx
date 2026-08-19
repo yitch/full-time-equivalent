@@ -1,11 +1,21 @@
 import { ROLES, TOWERS, TOWER_IDS } from '@fte/shared'
-import type { GameState, PlayerId, RoleId, TechId, TowerTypeId, Vec2 } from '@fte/shared'
+import type {
+  ArtifactSlot,
+  GameState,
+  PlayerId,
+  Profile,
+  RoleId,
+  TechId,
+  TowerTypeId,
+  Vec2,
+} from '@fte/shared'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NetClient, type NetStatus } from '../net/client.js'
 import { Board } from './Board.js'
 import { BottomBar } from './BottomBar.js'
 import { Lobby } from './Lobby.js'
 import { Briefing, EndCard, Steering } from './Overlays.js'
+import { CharacterSheet } from './CharacterSheet.js'
 import { TechTree } from './TechTree.js'
 import { TopBar } from './TopBar.js'
 
@@ -33,9 +43,11 @@ export function App() {
   const [localPlayerId, setLocalPlayerId] = useState<PlayerId | null>(null)
   const [roomCode, setRoomCode] = useState<string | null>(null)
   const [status, setStatus] = useState<NetStatus>('idle')
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [selected, setSelected] = useState<TowerTypeId | null>(null)
   const [techOpen, setTechOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   const netRef = useRef<NetClient | null>(null)
   const heldRef = useRef(new Set<string>())
@@ -51,6 +63,7 @@ export function App() {
   const net = useMemo(() => {
     const client = new NetClient({
       onState: setState,
+      onProfile: setProfile,
       onWelcome: (playerId, code) => {
         setLocalPlayerId(playerId)
         setRoomCode(code)
@@ -99,9 +112,14 @@ export function App() {
         setTechOpen((open) => !open)
         return
       }
+      if (key === 'c') {
+        setSheetOpen((open) => !open)
+        return
+      }
       if (key === 'escape') {
         setSelected(null)
         setTechOpen(false)
+        setSheetOpen(false)
         return
       }
       // W is taken by movement, so the second ability sits on F.
@@ -145,6 +163,11 @@ export function App() {
   const ready = (value: boolean) => net.send({ t: 'ready', value })
   const unlock = (tech: TechId) => net.send({ t: 'unlock', tech })
   const startWave = () => net.send({ t: 'start_wave' })
+  const talent = (node: string) => net.send({ t: 'talent', node })
+  const equip = (artifactId: string) => net.send({ t: 'equip', artifactId })
+  const unequip = (slot: Parameters<typeof net.send>[0] extends never ? never : ArtifactSlot) =>
+    net.send({ t: 'unequip', slot })
+  const discard = (artifactId: string) => net.send({ t: 'discard', artifactId })
 
   const place = (tile: Vec2) => {
     if (!selected) return
@@ -166,6 +189,7 @@ export function App() {
         onConnect={connect}
         onPickRole={pickRole}
         onReady={ready}
+        profile={profile}
       />
     )
   }
@@ -202,7 +226,7 @@ export function App() {
           </div>
 
           <div className="hint">
-            <b>WASD</b> move · <b>Q F E R</b> abilities · <b>1-9</b> pick a process ·
+            <b>WASD</b> move · <b>Q F E R</b> abilities · <b>C</b> character · <b>1-9</b> pick a process ·
             click to place
             <br />
             {me?.role && ROLES[me.role]?.title}
@@ -219,6 +243,17 @@ export function App() {
           )}
           {(state.phase === 'gameover' || state.phase === 'victory') && <EndCard state={state} />}
           {techOpen && <TechTree state={state} onUnlock={unlock} onClose={() => setTechOpen(false)} />}
+          {sheetOpen && (
+            <CharacterSheet
+              state={state}
+              localPlayerId={localPlayerId}
+              onTalent={talent}
+              onEquip={equip}
+              onUnequip={unequip}
+              onDiscard={discard}
+              onClose={() => setSheetOpen(false)}
+            />
+          )}
         </Board>
       </div>
 
@@ -228,6 +263,7 @@ export function App() {
         selected={selected}
         onSelect={setSelected}
         onOpenTech={() => setTechOpen(true)}
+        onOpenSheet={() => setSheetOpen(true)}
         onStartWave={startWave}
       />
     </div>

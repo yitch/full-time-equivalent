@@ -2,6 +2,9 @@
 *a people operations tower defence*
 
 **Status:** approved 2026-08-19 · **Slice:** Floor 3 — Shared Services
+**Revision 2 (2026-08-19):** classes replaced by the fourteen corporate animals;
+OTTTD-style deployed heroes; Diablo-style levels, talents and affixed loot;
+Stakeholders added as an enemy tier that attacks towers rather than the door.
 
 ---
 
@@ -154,62 +157,104 @@ Passives worth calling out:
 
 ---
 
-## 6. Roles (co-op classes)
+## 6. Classes — the fourteen dangerous animals
 
-1–5 players. Each picks a role; duplicates allowed but the second one gets a
-`-20%` "unclear ownership" penalty, which is both a balance lever and a joke.
+You do not play a heroic people function. **You play one of the animals.**
 
-### 1. HR Business Partner
-- **Passive — Pulled Into Non-Strategic Work:** at the start of each wave one
-  random ability is disabled. A calendar icon floats over their head.
-- **Q — Stakeholder Alignment:** +25% damage to all towers in a radius, 8s.
-- **W — Difficult Conversation:** high single-target `human` damage.
-- **R — Executive Buy-In:** +40 Social Capital, instantly. 180s cooldown.
+Every class's passive is its documented dysfunction, and in every case the
+dysfunction is simultaneously the strongest thing about the class and the reason
+it costs you something. This is the hard rule for adding a class: *if the passive
+only ever helps, it is a bonus, not a dysfunction, and it does not belong here.*
 
-### 2. Payroll
-- **Passive — The Cutoff Is The Cutoff:** ×2.0 `specialist` damage vs Payroll
-  Discrepancies. Cannot be talked out of it.
-- **Q — Off-Cycle Run:** deletes one Payroll Discrepancy outright. Costs Budget.
-- **W — Reconciliation:** slows everything in lane 0.
-- **R — Gross-to-Net:** clears every Payroll request on the board. Drains Budget hard.
-- Locked to lane 0 movement bonus; sluggish elsewhere.
+| Animal | Backronym | Passive — and what it costs |
+|---|---|---|
+| **HIPPO** | Highest Paid Person's Opinion | Damage **ignores all resistances** — evidence was never the point. Gains **55% less Social Capital**. |
+| **ZEBRA** | Zero Evidence But Really Arrogant | **×2 damage at full health, ×0.5 once damaged.** Nobody re-reads your slide. |
+| **WOLF** | Works On Latest Fire | **+110%** vs the three newest arrivals, **−35%** vs everything older. You do not do backlog. |
+| **RHINO** | Really Here In Name Only | **Zero damage for the first 18 seconds** of a wave, then **+170%**. |
+| **SEAGULL** | Senior Executive Amuses, Glides, Unloads Loudly & Leaves | Fastest class alive. **Stand still 2s and you teleport at random.** Cannot hold ground. |
+| **GOOSE** | Guessing Overly Scheduling Estimates | Cooldowns **45% shorter**; every ability has a **30% chance to simply not happen**. |
+| **PUFFIN** | Plans Unending Feature Factory Initiatives | **+2 capacity, towers 25% cheaper.** Every tower you build **spawns an Onboarding Packet**. |
+| **PUMA** | Promotes Unusually Mendacious Assumptions | Every hit rolls **×0.25 to ×2.5**. Every single one. |
+| **COBRA** | Cognitive Bias Related Assertions | **+22% per prior kill of that type this wave** (cap +200%), reset each wave. Blind to anything new. |
+| **YAK** | Yet Another KPI | Generates Social Capital passively. Towers within 6 tiles deal **22% less**. |
+| **DONKEY** | Data Only, No Knowledge, Expertise Or Why | **Triple attack speed, one third damage.** Volume is the strategy. |
+| **MOUSE** | Shifts position, avoiding firm decisions | Takes **55% less**, deals **35% less**, and requests **ignore you entirely**. |
+| **VIPER** | Vindictive Person Endangering Results | **+7% permanently** per request type that has ever breached. You need the team to fail. |
+| **DODO** | Dangerously Outdated Opinions | **+140% damage.** Cooldown reduction does nothing for you and your towers can never be upgraded. |
 
-### 3. Talent Acquisition
-- **Passive — Headcount:** every 30s, unlocks a free tower slot **and spawns an
-  Onboarding Packet.** Perfectly, tragically self-defeating.
-- **Q — Pipeline:** summons a temporary Intern unit that fights for 20s then leaves.
-- **W — Ghosting:** despawns one request. It'll be back next wave.
-- **R — Sign The Req:** +2 permanent tower slots, +6 Onboarding Packets. Use it wrong and you die.
+Duplicates are allowed and carry an "unclear ownership" penalty.
 
-### 4. Total Rewards
-- **Passive — Benchmarked:** deals bonus damage proportional to how long they've
-  stood still. Spreadsheets require stillness.
-- **Q — Market Adjustment:** cone damage.
-- **W — Bonus Accrual:** stores damage for later.
-- **R — RUN THE COMP CYCLE:** 60-second channel. Devastating board-wide nuke.
-  **Interrupted if they take damage or move.** They will be interrupted.
+### The hero layer (OTTTD)
 
-### 5. HRIS / People Systems
-- **Passive — Admin Rights:** all `automation` towers +20%.
-- **Q — Hotfix:** instantly repairs/reactivates a tower.
-- **W — Data Load:** reveals stealth in a radius for 6s.
-- **R — Go-Live:** all towers fire at 3× for 15s, then a **Maintenance Window**
-  disables every automation tower for 8s. Timing this is the entire skill of the class.
+Heroes are deployed units, not cursors. They have HP, reach, a swing timer and
+four abilities; they take damage from anything they stand next to; they can be
+**downed** (12s, halved by the Resilient talent) and revived far faster by a
+colleague standing over them.
 
-### 6. Travel & Claims 🎒 *(the one nobody picks)*
-- **Passive — Nobody Knows Your Name:** requests do not target them. Also, no
-  other player's buffs apply to them. Nobody has ever put them on a distro list.
-- **Passive — Sole Custody:** ×2.5 `specialist` damage vs Expense Claims, which
-  are immune to `automation` entirely. **You are the only counter in the game.**
-- **Q — Receipt Required:** stops an Expense Claim from splitting.
-- **W — Mileage:** chip damage along a line.
-- **R — PER DIEM:** flat, unblockable, resistance-ignoring damage to everything
-  on screen. Scales with the number of Expense Claims currently alive.
+**One lever governs the whole pillar:** `HERO_OUTPUT_SCALE` in `sim/heroes.ts`.
+Heroes matter, but processes must still out-damage people over a full run — a
+balance test asserts it. If a new class breaks that, turn the lever down rather
+than nerfing fourteen stat blocks.
 
-**Balance intent:** Travel & Claims has the worst numbers on the sheet for waves
-1–5 and is the reason the lobby survives waves 9+. The joke lands only if it's true.
+All hero damage — auto-attacks and abilities alike — flows through a single
+`strike()` function so passives, specialist multipliers, legendary hooks and kill
+credit can never drift apart between the two sources.
 
----
+**XP is shared across the team, including kills the towers made.** The
+alternative punishes exactly the play the rest of the game teaches.
+
+## 6b. Progression (Diablo)
+
+Two clocks run at once:
+
+- **Run clock** — hero levels 1–30, one talent point each, reset every campaign.
+  A full campaign takes a competent squad to roughly level 20.
+- **Profile clock** — account level, per-animal levels, and a 20-item stash,
+  persisted server-side as JSON against a `localStorage` id. No accounts.
+
+### Talents
+Three branches per class, three nodes each. Levelling to 30 gives 29 points;
+maxing everything costs 33 — **the build is a choice**. The branches always mean
+the same three things, which is what makes fourteen trees learnable:
+
+- **LEAN IN** — double down on the dysfunction. Highest ceiling, worst habits.
+- **GROW OUT** — mitigate it. You become a functional adult. Less spectacular.
+- **WEAPONISE** — point the dysfunction at the organisation instead of the work.
+
+### Artifacts
+Five slots — badge, device, document, beverage, furniture. Five rarities, named
+in performance-review language: Standard Issue → Approved → Business Critical →
+Board Visible → Career Defining. Affixes roll from per-slot pools and scale with
+item level, which scales with wave.
+
+Five legendaries, each bending exactly one rule: *The Shadow Spreadsheet*,
+*The Escalation Inbox*, *Pre-Approved Business Case*, *Garden Leave Letter*,
+*The Chairman's Ear*.
+
+Elites and Stakeholders drop; trash does not, or the floor becomes unreadable.
+
+## 6c. Stakeholders — the enemy mirror
+
+The same fourteen animals, as enemies. They do **not** race you to the CHRO door.
+They walk to your **towers** and interfere with them, which forces a different
+verb out of the player: you cannot out-build a Stakeholder, you have to physically
+go and deal with it. This is what makes the hero layer load-bearing rather than
+decorative.
+
+| Interference | Effect | Who does it |
+|---|---|---|
+| `override` | Nearby towers deal 40% less | HiPPO, The Certain (COBRA) |
+| `disable` | Sits on a tower; it is offline until they leave | The Absent Approver (RHINO) |
+| `destroy` | **Permanently** removes a tower | The Grudge (VIPER) |
+| `downgrade` | Reverts a tower one upgrade level | The Confident One (ZEBRA), The Old Guard (DODO) |
+| `generate` | Spawns extra requests on a timer | The Firefighter (WOLF), The Feature Factory (PUFFIN) |
+| `drain_budget` / `drain_social` | Steals resources | The Gut Feel (PUMA), The Metrics Owner (YAK) |
+| `shrink` | Halves nearby tower range | The Estimator (GOOSE), The Data Requester (DONKEY) |
+| `rally` | Heals and extends the SLA of nearby requests | The Deferrer (MOUSE) |
+| `unload` | One huge burst of Morale damage, then leaves | The Visiting Executive (SEAGULL) |
+
+Managing one pays Social Capital and rolls for a drop.
 
 ## 7. Waves
 
@@ -269,8 +314,14 @@ Zero binary assets. Fully diffable. The whole mood is one swappable file.
 ```
 packages/shared/   pure TS. sim + content. no DOM, no Node APIs. deterministic, seeded RNG.
 packages/server/   authoritative loop @20Hz, snapshots @10Hz, room codes, 1–5 players.
-packages/client/   React shell (HUD, tech tree, roster) + PixiJS canvas (the floor).
+packages/client/   React shell (HUD, tech tree, character sheet) + PixiJS canvas.
 ```
+
+Progression lives in `shared/src/progression.ts` (XP, stats, talents, loot rolls)
+and `shared/src/types-progression.ts`. Content for the new systems is in
+`content/roles.ts`, `content/talents.ts`, `content/artifacts.ts` and
+`content/stakeholders.ts`. Sprites for the animals are composed from head plates
+plus a shared body in `client/src/render/animals.ts`.
 
 **The contract:** `step(state, intents, dt) → state` is pure. The server is the
 only writer. Clients send *intents* (`move`, `build`, `ability`, `unlock`), never
@@ -286,5 +337,6 @@ days, and content work must never require holding the engine in context.
 
 ## 10. Out of scope for the slice
 
-Persistence, accounts, matchmaking beyond room codes, mobile, audio, the four
-non-Open-Enrollment bosses, roles 3/4 ability VFX polish, map 2+.
+Accounts and matchmaking beyond room codes, mobile, audio, the four
+non-Open-Enrollment bosses, ability VFX polish, map 2+, crafting, set bonuses,
+and a stash UI between runs (the stash persists but is not yet browsable).

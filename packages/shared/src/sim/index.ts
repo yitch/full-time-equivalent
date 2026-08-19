@@ -23,6 +23,7 @@ import {
 } from '../content/index.js'
 import { chance, createRng, nextInt, pick } from '../rng.js'
 import type {
+  ArtifactSlot,
   GameState,
   Intent,
   Player,
@@ -31,12 +32,24 @@ import type {
   TowerEntity,
 } from '../types.js'
 import { castAbility, dealBest } from './abilities.js'
+import {
+  cooldownScale,
+  damageHero,
+  heroAttack,
+  tickFlyBy,
+  tickHeroBody,
+  tickMetrics,
+} from './heroes.js'
+import { overrideFactor, spawnStakeholder, stepStakeholders } from './stakeholders.js'
+import { refreshHero, rollArtifact, spendTalent } from '../progression.js'
 import { ESCALATED_DAMAGE, ESCALATED_SPEED, damageRequest, escalate, pickTarget, spawnRequest } from './combat.js'
 import { addPlayer, pushLog, recomputeOwnership, removePlayer, setRole } from './state.js'
 
 export * from './state.js'
 export * from './combat.js'
 export * from './abilities.js'
+export * from './heroes.js'
+export * from './stakeholders.js'
 
 // ─────────────────────────────────────────────────────────────── tower stats
 
@@ -67,7 +80,7 @@ export function resolveTowerStats(state: GameState, tower: TowerEntity): Resolve
 
   if (def.channel === 'automation') {
     if (state.unlocked.includes('aiagent')) damage *= 1.25
-    const hasHris = Object.values(state.players).some((p) => p.connected && p.role === 'hris')
+    const hasHris = Object.values(state.players).some((p) => p.connected && p.role === 'puffin')
     if (hasHris) damage *= 1.2
   }
 
@@ -77,6 +90,25 @@ export function resolveTowerStats(state: GameState, tower: TowerEntity): Resolve
       damage *= 1 + aura.amount
     }
   }
+
+  // YAK: everything within six tiles is too busy reporting to do the work.
+  for (const player of Object.values(state.players)) {
+    if (!player.connected || player.role !== 'yak') continue
+    if (Math.hypot(player.pos.x - centre.x, player.pos.y - centre.y) <= 6) damage *= 0.78
+  }
+
+  // Players buff every tower they own through gear and talents.
+  for (const player of Object.values(state.players)) {
+    if (!player.connected) continue
+    if (tower.builtBy === player.id) {
+      damage *= 1 + player.hero.stats.towerDamage
+      range *= 1 + player.hero.stats.towerRange
+    }
+  }
+
+  const suppression = overrideFactor(state, tower)
+  damage *= suppression.damage
+  range *= suppression.range
 
   if (state.overclockTicks > 0) fireRate *= state.overclockAmount
 
@@ -171,6 +203,7 @@ function beginWave(state: GameState): void {
     }
   }
   state.pending.sort((a, b) => a.at - b.at)
+  state.pendingStakeholders = [...(wave.stakeholders ?? [])].sort((a, b) => a.at - b.at)
 
   // HRBP: one random ability disabled, because someone booked them into a meeting.
   for (const player of Object.values(state.players)) {
@@ -210,8 +243,15 @@ function stepWave(state: GameState): void {
   state.maintenanceTicks = inWindow ? 2 : 0
 
   drainSpawns(state, t)
+  while (state.pendingStakeholders.length > 0 && state.pendingStakeholders[0]!.at <= t) {
+    const entry = state.pendingStakeholders.shift()!
+    spawnStakeholder(state, entry.type, entry.lane)
+  }
   stepRequests(state)
+  stepStakeholders(state)
   stepTowers(state)
+  stepLoot(state)
+  stepWalls(state)
 
   if (state.morale <= 0) {
     state.phase = 'gameover'
@@ -227,9 +267,9 @@ function stepWave(state: GameState): void {
     return
   }
 
-  const spawnsDone = state.pending.length === 0
+  const spawnsDone = state.pending.length === 0 && state.pendingStakeholders.length === 0
   const lastSpawn = wave.groups.reduce((m, g) => Math.max(m, g.at + g.count * g.spacing), 0)
-  const alive = state.requests.some((r) => r.hp > 0)
+  const alive = state.requests.some((r) => r.hp > 0) || state.stakeholders.some((s) => s.hp > 0)
   if (spawnsDone && !alive && t > lastSpawn + Math.min(3, wave.tailSeconds)) endWave(state)
 }
 
@@ -264,6 +304,9 @@ function stepRequests(state: GameState): void {
       if (status.ticks > 0) status.ticks--
       if (status.kind === 'slowed') slow = Math.max(slow, status.amount ?? 0.4)
       if (status.kind === 'queued') queued = true
+      if (status.kind === 'burning' && state.tick % TICK_HZ === 0) {
+        damageRequest(state, req, status.amount ?? 10, 'human')
+      }
     }
     req.statuses = req.statuses.filter((s) => s.ticks !== 0)
 
@@ -307,6 +350,7 @@ function breach(state: GameState, req: RequestEntity): void {
     state.morale = Math.max(0, state.morale - def.moraleDamage * mult)
   }
   state.stats.breached++
+  state.breachedTypes.push(req.type)
   const total = state.stats.resolved + state.stats.breached
   state.stats.slaCompliance = total > 0 ? state.stats.resolved / total : 1
   state.events.push({
@@ -388,6 +432,7 @@ function stepPlayers(state: GameState): void {
 
     for (const slot of player.abilities) {
       if (slot.cooldown > 0) slot.cooldown--
+      void cooldownScale
       if (slot.channelling > 0) {
         if (moving) {
           slot.channelling = 0
@@ -400,26 +445,27 @@ function stepPlayers(state: GameState): void {
       }
     }
 
-    // Contact damage, ~1.7x a second, short reach. A present human matters, but
-    // never out-damages the processes — the moment people out-gun towers, the
-    // game stops being about the thing it is about. `npm run balance` guards this.
-    if (state.phase === 'wave' && state.tick % 15 === 0 && player.role) {
-      const role = getRole(player.role)
-      let nearest: RequestEntity | null = null
-      let bestD = Infinity
-      for (const req of state.requests) {
-        if (req.hp <= 0) continue
-        if (!req.revealed && !role.seesStealth) continue
-        const d = Math.hypot(req.pos.x - player.pos.x, req.pos.y - player.pos.y)
-        if (d < bestD) {
-          bestD = d
-          nearest = req
-        }
-      }
-      if (nearest && bestD <= 1.6) {
-        if (!nearest.revealed && role.seesStealth) nearest.revealed = true
-        dealBest(state, player, nearest, role.contactDamage * player.ownershipPenalty)
-      }
+    tickFlyBy(state, player, moving)
+    tickMetrics(state, player)
+    tickHeroBody(state, player)
+
+    if (state.phase === 'wave') {
+      heroAttack(state, player)
+      requestsFightBack(state, player)
+    }
+
+    // Walking over a drop picks it up. No inventory dance mid-wave.
+    for (const drop of [...state.loot]) {
+      if (Math.hypot(drop.pos.x - player.pos.x, drop.pos.y - player.pos.y) > 1.2) continue
+      player.hero.bag.push(drop.artifact)
+      state.loot = state.loot.filter((l) => l.id !== drop.id)
+      state.events.push({
+        kind: 'pickup',
+        at: { ...player.pos },
+        playerId: player.id,
+        text: drop.artifact.name,
+      })
+      pushLog(state, `${player.name} picked up ${drop.artifact.name}.`)
     }
   }
 
@@ -479,6 +525,68 @@ function endWave(state: GameState): void {
   state.phaseTicks = Math.round(STEERING_SECONDS * TICK_HZ)
 }
 
+/**
+ * Requests and Stakeholders engage a hero standing in their way. Without this
+ * the hero layer is a damage turret with no risk, and there is no reason to ever
+ * retreat — which is the decision OTTTD-style heroes exist to create.
+ */
+function requestsFightBack(state: GameState, player: Player): void {
+  if (state.tick % TICK_HZ !== 0) return
+  if (player.hero.downedTicks > 0) return
+  const role = getRole(player.role!)
+  if (role.ignoredByRequests) return
+
+  let damage = 0
+  for (const req of state.requests) {
+    if (req.hp <= 0) continue
+    if (Math.hypot(req.pos.x - player.pos.x, req.pos.y - player.pos.y) > 1.1) continue
+    const def = getRequest(req.type)
+    damage += def.moraleDamage * (req.escalated ? 2.4 : 1) * 1.5
+  }
+  for (const s of state.stakeholders) {
+    if (s.hp <= 0) continue
+    if (Math.hypot(s.pos.x - player.pos.x, s.pos.y - player.pos.y) > 1.6) continue
+    damage += 9
+  }
+  if (damage > 0) damageHero(state, player, damage)
+}
+
+/** Drops decay so the floor does not silt up over a long run. */
+function stepLoot(state: GameState): void {
+  for (const drop of state.loot) drop.ticks--
+  state.loot = state.loot.filter((l) => l.ticks > 0)
+}
+
+function stepWalls(state: GameState): void {
+  for (const wall of state.walls) wall.ticks--
+  state.walls = state.walls.filter((w) => w.ticks > 0)
+}
+
+function equipArtifact(state: GameState, playerId: PlayerId, artifactId: string): string | null {
+  const player = state.players[playerId]
+  if (!player?.role) return 'Not in this room.'
+  const index = player.hero.bag.findIndex((a) => a.id === artifactId)
+  if (index === -1) return 'Not in your bag.'
+  const artifact = player.hero.bag[index]!
+  const current = player.hero.equipment[artifact.slot]
+  player.hero.equipment[artifact.slot] = artifact
+  player.hero.bag.splice(index, 1)
+  if (current) player.hero.bag.push(current)
+  refreshHero(player.hero, player.role)
+  return null
+}
+
+function unequipArtifact(state: GameState, playerId: PlayerId, slot: ArtifactSlot): string | null {
+  const player = state.players[playerId]
+  if (!player?.role) return 'Not in this room.'
+  const current = player.hero.equipment[slot]
+  if (!current) return 'Nothing equipped there.'
+  player.hero.equipment[slot] = null
+  player.hero.bag.push(current)
+  refreshHero(player.hero, player.role)
+  return null
+}
+
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v
 }
@@ -524,6 +632,28 @@ export function applyIntent(state: GameState, playerId: PlayerId, intent: Intent
 
     case 'unlock':
       return unlockTech(state, intent.tech)
+
+    case 'talent': {
+      if (!player?.role) return 'Not in this room.'
+      return spendTalent(player.hero, player.role, intent.node)
+    }
+
+    case 'equip':
+      return equipArtifact(state, playerId, intent.artifactId)
+
+    case 'unequip':
+      return unequipArtifact(state, playerId, intent.slot)
+
+    case 'discard': {
+      if (!player) return 'Not in this room.'
+      player.hero.bag = player.hero.bag.filter((a) => a.id !== intent.artifactId)
+      return null
+    }
+
+    case 'attack_move':
+      if (!player) return 'Not in this room.'
+      player.move = { x: clamp(intent.x, -1, 1), y: clamp(intent.y, -1, 1) }
+      return null
 
     case 'start_wave':
       if (state.phase === 'briefing') {

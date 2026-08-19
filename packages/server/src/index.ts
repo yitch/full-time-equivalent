@@ -51,7 +51,7 @@ wss.on('connection', (socket: WebSocket) => {
     if (message.t === 'hello') {
       if (room) return
       room = findOrCreateRoom(message.roomCode)
-      const joined = room.join(playerId, socket, message.name)
+      const joined = room.join(playerId, socket, message.name, message.profileId)
       if (!joined) room = null
       else console.log(`[room ${room.code}] ${message.name} joined (${room.size} in room)`)
       return

@@ -6,7 +6,8 @@ import {
   removePlayer,
   step,
 } from '@fte/shared'
-import type { GameState, Intent, PlayerId, ServerMessage } from '@fte/shared'
+import type { GameState, Intent, PlayerId, Profile, ServerMessage } from '@fte/shared'
+import { bankRun, getProfile } from './profiles.js'
 import type { WebSocket } from 'ws'
 
 export interface Member {
@@ -44,19 +45,32 @@ export class Room {
     return this.members.size === 0
   }
 
-  join(playerId: PlayerId, socket: WebSocket, name: string): boolean {
+  join(playerId: PlayerId, socket: WebSocket, name: string, profileId?: string): boolean {
     const error = applyIntent(this.state, playerId, { t: 'join', name })
     if (error) {
       this.send(socket, { t: 'error', message: error })
       return false
     }
     this.members.set(playerId, { socket, playerId })
+
+    let profile: Profile | null = null
+    if (profileId) {
+      profile = getProfile(profileId, name)
+      const player = this.state.players[playerId]
+      if (player) player.profileId = profileId
+      this.send(socket, { t: 'profile', profile })
+    }
+
     this.send(socket, { t: 'welcome', playerId, roomCode: this.code, state: this.state })
     this.start()
     return true
   }
 
   leave(playerId: PlayerId): void {
+    const player = this.state.players[playerId]
+    // Bank whatever they earned before they vanish. Losing a run to a closed
+    // laptop is the fastest way to make progression feel worthless.
+    if (player?.profileId) bankRun(this.state, player)
     this.members.delete(playerId)
     removePlayer(this.state, playerId)
     if (this.isEmpty) this.stop()
@@ -101,8 +115,19 @@ export class Room {
         }
       }
 
+      const before = this.state.phase
       step(this.state)
       this.sinceSnapshot++
+
+      // Bank progression the moment the run resolves, not on disconnect.
+      if (before !== this.state.phase && (this.state.phase === 'victory' || this.state.phase === 'gameover')) {
+        for (const member of this.members.values()) {
+          const player = this.state.players[member.playerId]
+          if (!player?.profileId) continue
+          const profile = bankRun(this.state, player)
+          if (profile) this.send(member.socket, { t: 'profile', profile })
+        }
+      }
     }
 
     if (this.sinceSnapshot >= TICKS_PER_SNAPSHOT) {

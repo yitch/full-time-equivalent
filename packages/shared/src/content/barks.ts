@@ -100,13 +100,22 @@ export const BREACH_BARKS: string[] = [
 ]
 
 /** Spoken by a player when an ability lands. */
+/** Spoken by a player when an ability lands. Each animal in its own voice. */
 export const ROLE_BARKS: Record<RoleId, string[]> = {
-  hrbp: ['let me take that offline', 'circling back', 'what does good look like here', 'I will socialise it'],
-  payroll: ['the cutoff is the cutoff', 'that is a Finance question', 'it will be in the next run', 'no'],
-  talent: ['great news!', 'they start Monday', 'strong pipeline', 'we lost them to comp'],
-  rewards: ['benchmarked at the 50th', 'that is outside the band', 'let me pull the data', 'per the matrix'],
-  hris: ['I can pull a report', 'that is a config change', 'do NOT touch anything', 'restoring from backup'],
-  travel: ['receipt required', 'that is above the cap', 'per diem', 'nobody knows my name'],
+  hippo: ["I have been doing this twenty years", "let us not overthink it", "I will make the call", "that is not my read"],
+  zebra: ["the data clearly shows", "everyone knows this", "I have seen this a hundred times", "trust me on this one"],
+  wolf: ["what is burning", "I am on it", "drop everything", "is this the new one"],
+  rhino: ["sorry, just catching up", "what did I miss", "I have read the thread now", "adding my thoughts"],
+  seagull: ["quick thought before I go", "have we considered", "I will leave that with you", "must dash"],
+  goose: ["that is a two-day job", "should be straightforward", "we will pick it up next sprint", "roughly a week"],
+  puffin: ["let us ship it", "add it to the roadmap", "v2 can fix that", "what else can we build"],
+  puma: ["I have a feeling about this", "gut says yes", "let us just go", "I cannot explain it"],
+  cobra: ["this is exactly like", "classic case of", "I knew it", "told you"],
+  yak: ["what is the metric", "can we measure that", "let us add a KPI", "is that in the dashboard"],
+  donkey: ["I will pull the numbers", "sending the export", "here is the raw file", "not sure what it means"],
+  mouse: ["let us park that", "happy either way", "whatever the group thinks", "can we revisit"],
+  viper: ["I have it in writing", "as I said in March", "interesting that you would say that", "I kept the email"],
+  dodo: ["at my old company", "we used to just", "why change it", "the form worked fine"],
 }
 
 /** Shown in the HUD ticker between waves. */

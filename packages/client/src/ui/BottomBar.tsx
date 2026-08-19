@@ -17,6 +17,7 @@ export function BottomBar({
   selected,
   onSelect,
   onOpenTech,
+  onOpenSheet,
   onStartWave,
 }: {
   state: GameState
@@ -24,6 +25,7 @@ export function BottomBar({
   selected: TowerTypeId | null
   onSelect: (id: TowerTypeId | null) => void
   onOpenTech: () => void
+  onOpenSheet: () => void
   onStartWave: () => void
 }) {
   const me = localPlayerId ? state.players[localPlayerId] : null
@@ -105,6 +107,44 @@ export function BottomBar({
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {me && role && (
+          <div className="hero-strip">
+            <button
+              className={`lv${me.hero.talentPoints > 0 ? ' pending' : ''}`}
+              onClick={onOpenSheet}
+              title="Character sheet (C)"
+            >
+              LVL {me.hero.level}
+              {me.hero.talentPoints > 0 ? ` · ${me.hero.talentPoints} pt` : ''}
+            </button>
+            <div className="hp">
+              <div style={{ fontSize: 8, color: 'var(--paper-dim)' }}>
+                {Math.round(me.hero.hp)}/{Math.round(me.hero.maxHp)}
+                {me.hero.downedTicks > 0 ? ' · SIGNED OFF' : ''}
+              </div>
+              <div className="track">
+                <div
+                  className="fill"
+                  style={{
+                    width: `${Math.max(0, (me.hero.hp / Math.max(1, me.hero.maxHp)) * 100)}%`,
+                    background:
+                      me.hero.hp / me.hero.maxHp > 0.5
+                        ? 'var(--tube-glow)'
+                        : me.hero.hp / me.hero.maxHp > 0.25
+                          ? 'var(--social)'
+                          : 'var(--escalate)',
+                  }}
+                />
+              </div>
+            </div>
+            {me.hero.bag.length > 0 && (
+              <span style={{ fontSize: 8, color: 'var(--screen-glow, #8fd0c8)' }}>
+                {me.hero.bag.length} in bag
+              </span>
+            )}
           </div>
         )}
 

@@ -1,5 +1,16 @@
 /** Core data model. Everything here is JSON-serialisable — snapshots go over the wire as-is. */
 
+import type {
+  Artifact,
+  ArtifactSlot,
+  Stats,
+  HeroState,
+  Profile,
+  StakeholderEntity,
+} from './types-progression.js'
+
+export type * from './types-progression.js'
+
 // ─────────────────────────────────────────────────────────────── ids & channels
 
 export type PlayerId = string
@@ -7,13 +18,29 @@ export type EntityId = number
 export type RequestTypeId = string
 export type TowerTypeId = string
 export type TechId = string
-export type RoleId =
-  | 'hrbp'
-  | 'payroll'
-  | 'talent'
-  | 'rewards'
-  | 'hris'
-  | 'travel'
+/**
+ * The classes. Every one is a documented corporate dysfunction, because the
+ * premise is that you are not a hero of the people function — you are one of the
+ * dangerous animals, and your flaw is your strongest ability.
+ */
+export type AnimalId =
+  | 'hippo'
+  | 'zebra'
+  | 'wolf'
+  | 'rhino'
+  | 'seagull'
+  | 'goose'
+  | 'puffin'
+  | 'puma'
+  | 'cobra'
+  | 'yak'
+  | 'donkey'
+  | 'mouse'
+  | 'viper'
+  | 'dodo'
+
+/** Kept as an alias: the sim talks about roles, content talks about animals. */
+export type RoleId = AnimalId
 
 /**
  * Damage channels. Every source deals through exactly one; every request has a
@@ -127,7 +154,7 @@ export interface TowerUpgrade {
   fireRateMul: number
 }
 
-export type StatusKind = 'tracked' | 'queued' | 'revealed' | 'slowed'
+export type StatusKind = 'tracked' | 'queued' | 'revealed' | 'slowed' | 'marked' | 'burning'
 
 export interface TechNode {
   id: TechId
@@ -172,6 +199,18 @@ export interface AbilityDef {
 }
 
 export type AbilityKind =
+  | 'dash'
+  | 'shield'
+  | 'mark'
+  | 'dot'
+  | 'push_back'
+  | 'percent_damage'
+  | 'gamble'
+  | 'delayed_nuke'
+  | 'reset_cooldowns'
+  | 'build_free'
+  | 'lane_shift'
+  | 'wall'
   | 'buff_towers'
   | 'single_target'
   | 'slow_lane'
@@ -189,11 +228,39 @@ export type AbilityKind =
   | 'line_damage'
   | 'per_diem'
 
+/** The class's defining dysfunction, handled in sim/passives.ts. */
+export type AnimalPassive =
+  | 'seniority'
+  | 'confidently_wrong'
+  | 'firefighter'
+  | 'absent'
+  | 'fly_by'
+  | 'optimistic_estimate'
+  | 'feature_factory'
+  | 'gut_feel'
+  | 'confirmation_bias'
+  | 'metrics'
+  | 'volume_over_insight'
+  | 'non_committal'
+  | 'grudge'
+  | 'obsolete'
+
 export interface RoleDef {
   id: RoleId
   name: string
+  /** The backronym, spelled out. */
+  expansion: string
   title: string
   flavour: string
+  /** The dysfunction, stated plainly. This is also the mechanic. */
+  dysfunction: string
+  passive: AnimalPassive
+  passiveName: string
+  passiveText: string
+  /** Level-1 stats before talents and gear. */
+  base: Partial<Stats>
+  /** Added per hero level. */
+  growth: Partial<Stats>
   /** Multiplier applied to this role's `specialist` damage. */
   specialistPower: number
   /** Request type ids this role can hit with `specialist` damage. */
@@ -206,7 +273,7 @@ export interface RoleDef {
   /** Loses one random ability at the start of every wave. HRBP. */
   losesAbilityEachWave: boolean
   abilities: AbilityDef[]
-  /** Base melee/contact damage the player deals via `human`. */
+  /** Base auto-attack damage the player deals via `human`. */
   contactDamage: number
   colour: string
   sprite: string
@@ -238,6 +305,8 @@ export interface WaveDef {
   tailSeconds: number
   /** Windows during which automation towers are offline. */
   maintenanceWindows?: { at: number; seconds: number }[]
+  /** Stakeholders that turn up during this wave to interfere with your towers. */
+  stakeholders?: { at: number; type: AnimalId; lane: number }[]
 }
 
 // ────────────────────────────────────────────────────────────────── live state
@@ -328,6 +397,18 @@ export interface Player {
   /** Applied when two players share a role. */
   ownershipPenalty: number
   stats: PlayerStats
+  /** OTTTD-style deployed hero: hp, level, talents, gear. */
+  hero: HeroState
+  /** Profile id, so the server can persist progression on disconnect. */
+  profileId: string | null
+  /** Kills by request type this wave. Feeds COBRA's confirmation bias. */
+  killsByType: Record<string, number>
+  /** Ticks the player has been stationary. Feeds SEAGULL's inability to stay. */
+  stillTicks: number
+  /** Absorb remaining from a shield ability. */
+  shield: number
+  /** Ticks of pending delayed damage, and its payload. */
+  pendingNuke: { ticks: number; damage: number } | null
 }
 
 export interface PlayerStats {
@@ -336,9 +417,21 @@ export interface PlayerStats {
   escalationsPrevented: number
   towersBuilt: number
   socialCapitalEarned: number
+  kills: number
+  stakeholdersManaged: number
+  timesDowned: number
+  damageDealt: number
 }
 
 export type Phase = 'lobby' | 'briefing' | 'wave' | 'steering' | 'gameover' | 'victory'
+
+/** A dropped artifact, on the floor, with a despawn timer. */
+export interface GroundLoot {
+  id: EntityId
+  artifact: Artifact
+  pos: Vec2
+  ticks: number
+}
 
 export interface RunStats {
   resolved: number
@@ -370,6 +463,13 @@ export interface GameEvent {
     | 'wave_end'
     | 'maintenance'
     | 'audit'
+    | 'levelup'
+    | 'drop'
+    | 'pickup'
+    | 'downed'
+    | 'revived'
+    | 'interference'
+    | 'stakeholder'
   at: Vec2
   text?: string
   amount?: number
@@ -391,6 +491,8 @@ export interface GameState {
   spawnCursor: number
   /** Pending spawns, produced by groups and drained over time. */
   pending: { at: number; type: RequestTypeId; lane: number }[]
+  /** Pending Stakeholder arrivals for this wave. */
+  pendingStakeholders: { at: number; type: AnimalId; lane: number }[]
 
   morale: number
   compliance: number
@@ -411,8 +513,16 @@ export interface GameState {
   overclockAmount: number
   /** Maximum number of towers that may exist. Talent Acquisition raises this. */
   towerSlots: number
-  /** Damage banked by Total Rewards' Bonus Accrual, keyed by player. */
+  /** Damage banked by a stored-damage ability, keyed by player. */
   storedDamage: Record<PlayerId, number>
+  /** The enemy mirror of the classes: they attack towers, not the door. */
+  stakeholders: StakeholderEntity[]
+  /** Artifacts lying on the floor waiting to be walked over. */
+  loot: GroundLoot[]
+  /** Request types that have breached this run. Feeds VIPER's grudge. */
+  breachedTypes: string[]
+  /** Temporary lane blockers created by DODO's filing cabinet. */
+  walls: { lane: number; progress: number; ticks: number }[]
 
   nextEntityId: EntityId
   stats: RunStats
@@ -434,6 +544,11 @@ export type Intent =
   | { t: 'ability'; key: 'Q' | 'W' | 'E' | 'R'; target?: Vec2 }
   | { t: 'unlock'; tech: TechId }
   | { t: 'start_wave' }
+  | { t: 'talent'; node: string }
+  | { t: 'equip'; artifactId: string }
+  | { t: 'unequip'; slot: ArtifactSlot }
+  | { t: 'discard'; artifactId: string }
+  | { t: 'attack_move'; x: number; y: number }
 
 export interface IntentEnvelope {
   playerId: PlayerId
@@ -443,10 +558,11 @@ export interface IntentEnvelope {
 // ──────────────────────────────────────────────────────────── wire protocol
 
 export type ServerMessage =
+  | { t: 'profile'; profile: Profile }
   | { t: 'welcome'; playerId: PlayerId; roomCode: string; state: GameState }
   | { t: 'snapshot'; state: GameState }
   | { t: 'error'; message: string }
 
 export type ClientMessage =
-  | { t: 'hello'; name: string; roomCode?: string }
+  | { t: 'hello'; name: string; roomCode?: string; profileId?: string }
   | { t: 'intent'; intent: Intent }

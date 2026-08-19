@@ -1,5 +1,5 @@
 import { ROLES, ROLE_IDS } from '@fte/shared'
-import type { GameState, PlayerId, RoleId } from '@fte/shared'
+import type { GameState, PlayerId, Profile, RoleId } from '@fte/shared'
 import { useState } from 'react'
 
 interface Props {
@@ -10,19 +10,28 @@ interface Props {
   onConnect: (name: string, roomCode?: string) => void
   onPickRole: (role: RoleId) => void
   onReady: (value: boolean) => void
+  profile: Profile | null
 }
 
-/** How each role reads at pick time. The warning line is the honest one. */
+/** The honest line about each animal. Shown at pick time, before it is too late. */
 const ROLE_WARNINGS: Record<RoleId, string> = {
-  hrbp: 'Loses a random ability every wave. Someone books you into a meeting.',
-  payroll: 'Strongest single-target in the game, locked to one problem.',
-  talent: 'Every good thing you do also spawns work. Read your ultimate twice.',
-  rewards: 'Your ultimate takes sixty seconds and breaks if you move.',
-  hris: 'Your ultimate ends in a blackout. Timing it is the whole class.',
-  travel: 'Worst stats until wave 6. The only counter to Expense Claims. Someone has to.',
+  hippo: 'Ignores every defence. Earns almost no Social Capital, because being obeyed is not being right.',
+  zebra: 'Double damage on first contact, half once anything checks the work.',
+  wolf: 'Devastating against whatever just arrived. Nearly useless against the backlog.',
+  rhino: 'Does literally nothing for the first 18 seconds of a wave, then flattens the room.',
+  seagull: 'Fastest in the game and physically cannot hold ground. Stand still and you teleport.',
+  goose: 'Half the cooldowns of anyone else. Three in ten abilities simply do not happen.',
+  puffin: 'Cheap towers and spare capacity. Everything you build creates more work.',
+  puma: 'Every hit rolls between a quarter and two and a half times damage. Every single one.',
+  cobra: 'Grows lethal against anything it has already killed this wave. Blind to anything new.',
+  yak: 'Generates Social Capital passively. Every tower near you is too busy reporting to work.',
+  donkey: 'Triple attack speed, a third of the damage. Volume is the entire strategy.',
+  mouse: 'Very hard to kill, deals very little, and requests ignore you completely.',
+  viper: 'Permanently stronger every time the team fails. You need the team to fail.',
+  dodo: '+140% damage. Cooldown reduction does nothing for you and your towers never upgrade.',
 }
 
-export function Lobby({ state, localPlayerId, roomCode, connected, onConnect, onPickRole, onReady }: Props) {
+export function Lobby({ state, localPlayerId, roomCode, connected, onConnect, onPickRole, onReady, profile }: Props) {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
 
@@ -78,7 +87,15 @@ export function Lobby({ state, localPlayerId, roomCode, connected, onConnect, on
   return (
     <div className="overlay">
       <div className="panel">
-        <h1>PICK YOUR FUNCTION</h1>
+        <h1>PICK YOUR ANIMAL</h1>
+        {profile && (
+          <p style={{ fontSize: 10, color: 'var(--social)' }}>
+            Account level <b>{profile.accountLevel}</b> · best wave {profile.records.bestWave} ·{' '}
+            {profile.records.runs} run{profile.records.runs === 1 ? '' : 's'} ·{' '}
+            {profile.records.victories} survived · {profile.unlocked.length}/14 animals unlocked ·{' '}
+            {profile.stash.length} in the stash
+          </p>
+        )}
         <p style={{ color: 'var(--paper-dim)' }}>
           Room <b style={{ color: 'var(--highlighter)' }}>{roomCode ?? '····'}</b> — share that code. Up to five.
           Duplicates are allowed and are worse, for reasons everyone here understands.
@@ -90,18 +107,29 @@ export function Lobby({ state, localPlayerId, roomCode, connected, onConnect, on
             if (!role) return null
             const taken = others.filter((p) => p.role === id && p.id !== localPlayerId).length
             const mine = me?.role === id
+            const locked = profile ? !profile.unlocked.includes(id) : false
+            const animalLevel = profile?.animalLevels?.[id] ?? 0
             return (
               <button
                 key={id}
-                className={`role-card${mine ? ' active' : ''}`}
+                className={`role-card${mine ? ' active' : ''}${locked ? ' locked' : ''}`}
                 style={{ borderColor: mine ? role.colour : undefined }}
+                disabled={locked}
+                title={locked ? 'Unlocks as your account level rises.' : role.dysfunction}
                 onClick={() => onPickRole(id)}
               >
                 <div className="rn" style={{ color: role.colour }}>
                   {role.name}
                 </div>
-                <div className="rt">{role.title}</div>
+                <div className="rx">
+                  {role.expansion}
+                  {animalLevel > 1 && <b style={{ color: 'var(--social)' }}> · lvl {animalLevel}</b>}
+                  {locked && <b style={{ color: 'var(--paper-dim)' }}> · LOCKED</b>}
+                </div>
                 <div className="rf">{role.flavour}</div>
+                <div className="rp">
+                  <b>{role.passiveName}:</b> {role.passiveText}
+                </div>
                 <span className="warn">{ROLE_WARNINGS[id]}</span>
                 {taken > 0 && (
                   <span className="warn" style={{ color: 'var(--escalate)' }}>

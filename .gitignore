@@ -6,3 +6,6 @@ dist/
 .env.local
 coverage/
 .vite/
+
+# Runtime profile store, written by the server.
+.data/

@@ -1,4 +1,5 @@
 import {
+  ARTIFACT_BASES,
   BOARD_H,
   BOARD_W,
   CHRO_DOOR,
@@ -7,7 +8,9 @@ import {
   LANES,
   PALETTE,
   PROPS,
+  RARITY_INFO,
   ROLES,
+  STAKEHOLDERS,
   TILE,
   getRequest,
   getTower,
@@ -56,12 +59,16 @@ export class GameStage {
     props: new Container(),
     towers: new Container(),
     requests: new Container(),
+    loot: new Container(),
+    stakeholders: new Container(),
     players: new Container(),
     fx: new Container(),
     overlay: new Container(),
   }
 
   private requestSprites = new Map<number, Container>()
+  private stakeholderSprites = new Map<number, Container>()
+  private lootSprites = new Map<number, Container>()
   private towerSprites = new Map<number, Container>()
   private playerSprites = new Map<string, Container>()
   private interp = new Map<number, Interp>()
@@ -92,6 +99,8 @@ export class GameStage {
       this.layers.props,
       this.layers.towers,
       this.layers.requests,
+      this.layers.loot,
+      this.layers.stakeholders,
       this.layers.players,
       this.layers.fx,
       this.layers.overlay,
@@ -200,6 +209,8 @@ export class GameStage {
   sync(state: GameState, input: StageInput): void {
     if (!this.ready) return
     this.syncRequests(state, input)
+    this.syncStakeholders(state)
+    this.syncLoot(state)
     this.syncTowers(state)
     this.syncPlayers(state, input)
     this.syncGhost(state, input)
@@ -337,7 +348,7 @@ export class GameStage {
       if (!node) {
         node = new Container()
         const role = ROLES[player.role]
-        const body = new Sprite(getSprite('pc_base', role?.colour ?? PALETTE.paper))
+        const body = new Sprite(getSprite(`pc_${player.role}` as never, role?.colour ?? PALETTE.paper))
         body.label = 'body'
         node.addChild(body)
 
@@ -350,9 +361,13 @@ export class GameStage {
           },
         })
         tag.label = 'tag'
-        tag.x = 6 - tag.width / 2
-        tag.y = -8
+        tag.x = 7 - tag.width / 2
+        tag.y = -9
         node.addChild(tag)
+
+        const bar = new Graphics()
+        bar.label = 'hpbar'
+        node.addChild(bar)
 
         const ring = new Graphics()
         ring.label = 'ring'
@@ -362,22 +377,47 @@ export class GameStage {
         this.layers.players.addChild(node)
       }
 
-      node.x = Math.round(player.pos.x * TILE - 6)
-      node.y = Math.round(player.pos.y * TILE - 12)
+      node.x = Math.round(player.pos.x * TILE - 7)
+      node.y = Math.round(player.pos.y * TILE - 13)
       node.zIndex = node.y
+
+      const hero = player.hero
+      const body = node.getChildByLabel('body') as Sprite | null
+      if (body) {
+        // Downed heroes lie flat and grey out. You can see who needs picking up.
+        body.alpha = hero.downedTicks > 0 ? 0.4 : 1
+        body.tint = hero.downedTicks > 0 ? 0x8a8398 : 0xffffff
+        body.rotation = hero.downedTicks > 0 ? Math.PI / 2 : 0
+        body.y = hero.downedTicks > 0 ? 16 : 0
+      }
+
+      const bar = node.getChildByLabel('hpbar') as Graphics | null
+      if (bar) {
+        bar.clear()
+        const pct = Math.max(0, hero.hp / Math.max(1, hero.maxHp))
+        if (pct < 1 || hero.downedTicks > 0) {
+          bar.rect(1, -4, 12, 2).fill({ color: PALETTE.wallShadow })
+          bar.rect(1, -4, 12 * pct, 2).fill({
+            color: pct > 0.5 ? PALETTE.tubeGlow : pct > 0.25 ? PALETTE.social : PALETTE.escalate,
+          })
+        }
+        if (player.shield > 0) {
+          bar.rect(1, -6, 12, 1).fill({ color: PALETTE.screenGlow })
+        }
+      }
 
       const ring = node.getChildByLabel('ring') as Graphics | null
       if (ring) {
         ring.clear()
         if (player.id === input.localPlayerId) {
-          ring.circle(6, 16, 7).stroke({ width: 1, color: PALETTE.highlighter, alpha: 0.55 })
+          ring.circle(7, 17, 8).stroke({ width: 1, color: PALETTE.highlighter, alpha: 0.55 })
         }
         const channelling = player.abilities.find((a) => a.channelling > 0)
         if (channelling) {
-          ring.circle(6, 16, 10).stroke({ width: 1, color: PALETTE.social })
+          ring.circle(7, 17, 11).stroke({ width: 1, color: PALETTE.social })
         }
-        if (player.abilities.some((a) => a.disabled)) {
-          ring.rect(11, -10, 4, 4).fill({ color: PALETTE.deckBlue })
+        if (player.hero.talentPoints > 0) {
+          ring.rect(12, -10, 4, 4).fill({ color: PALETTE.social })
         }
       }
     }
@@ -386,6 +426,99 @@ export class GameStage {
       if (seen.has(id)) continue
       node.destroy({ children: true })
       this.playerSprites.delete(id)
+    }
+  }
+
+  /** Stakeholders are drawn bigger and outlined — they are a different threat. */
+  private syncStakeholders(state: GameState): void {
+    const seen = new Set<number>()
+
+    for (const s of state.stakeholders) {
+      seen.add(s.id)
+      let node = this.stakeholderSprites.get(s.id)
+
+      if (!node) {
+        node = new Container()
+        const def = STAKEHOLDERS[s.type]
+        const body = new Sprite(getSprite(`sh_${s.type}` as never, ROLES[s.type]?.colour ?? PALETTE.paper))
+        body.label = 'body'
+        node.addChild(body)
+
+        const label = new Text({
+          text: (def?.name ?? s.type).toUpperCase(),
+          style: {
+            fontFamily: 'Silkscreen, monospace',
+            fontSize: 5,
+            fill: PALETTE.highlighter,
+            stroke: { color: PALETTE.void, width: 2 },
+          },
+        })
+        label.x = 7 - label.width / 2
+        label.y = -15
+        node.addChild(label)
+
+        const bar = new Graphics()
+        bar.label = 'bar'
+        node.addChild(bar)
+
+        this.stakeholderSprites.set(s.id, node)
+        this.layers.stakeholders.addChild(node)
+      }
+
+      node.x = Math.round(s.pos.x * TILE - 7)
+      node.y = Math.round(s.pos.y * TILE - 13)
+      node.zIndex = node.y
+
+      const bar = node.getChildByLabel('bar') as Graphics | null
+      if (bar) {
+        bar.clear()
+        const pct = Math.max(0, s.hp / s.maxHp)
+        bar.rect(0, -7, 14, 2).fill({ color: PALETTE.wallShadow })
+        bar.rect(0, -7, 14 * pct, 2).fill({ color: PALETTE.escalate })
+      }
+    }
+
+    for (const [id, node] of this.stakeholderSprites) {
+      if (seen.has(id)) continue
+      node.destroy({ children: true })
+      this.stakeholderSprites.delete(id)
+    }
+  }
+
+  /** Drops pulse in their rarity colour and fade as they are about to expire. */
+  private syncLoot(state: GameState): void {
+    const seen = new Set<number>()
+
+    for (const drop of state.loot) {
+      seen.add(drop.id)
+      let node = this.lootSprites.get(drop.id)
+
+      if (!node) {
+        node = new Container()
+        const colour = RARITY_INFO[drop.artifact.rarity].colour
+        const base = ARTIFACT_BASES.find((b) => b.id === drop.artifact.base)
+        const icon = new Sprite(getSprite((base?.sprite ?? 'it_doc') as never, colour))
+        icon.label = 'icon'
+        node.addChild(icon)
+
+        const glow = new Graphics()
+        glow.label = 'glow'
+        glow.circle(6, 6, 7).stroke({ width: 1, color: colour, alpha: 0.8 })
+        node.addChildAt(glow, 0)
+
+        this.lootSprites.set(drop.id, node)
+        this.layers.loot.addChild(node)
+      }
+
+      node.x = Math.round(drop.pos.x * TILE - 6)
+      node.y = Math.round(drop.pos.y * TILE - 6)
+      node.alpha = drop.ticks < 100 ? 0.35 + 0.65 * Math.abs(Math.sin(state.tick * 0.2)) : 1
+    }
+
+    for (const [id, node] of this.lootSprites) {
+      if (seen.has(id)) continue
+      node.destroy({ children: true })
+      this.lootSprites.delete(id)
     }
   }
 
@@ -452,6 +585,34 @@ export class GameStage {
           text = `${event.text} approved`
           colour = PALETTE.social
           break
+        case 'levelup':
+          text = event.text ?? 'LEVEL UP'
+          colour = PALETTE.social
+          break
+        case 'drop':
+          text = event.text ?? 'drop'
+          colour = PALETTE.screenGlow
+          break
+        case 'pickup':
+          text = `+ ${event.text}`
+          colour = PALETTE.tubeGlow
+          break
+        case 'downed':
+          text = 'SIGNED OFF'
+          colour = PALETTE.escalate
+          break
+        case 'revived':
+          text = 'back online'
+          colour = PALETTE.tubeGlow
+          break
+        case 'interference':
+          text = event.text ?? 'interference'
+          colour = PALETTE.escalate
+          break
+        case 'stakeholder':
+          text = event.text ?? null
+          colour = PALETTE.highlighter
+          break
         default:
           break
       }
@@ -490,6 +651,7 @@ export class GameStage {
 
     this.layers.requests.sortableChildren = true
     this.layers.players.sortableChildren = true
+    this.layers.stakeholders.sortableChildren = true
   }
 }
 

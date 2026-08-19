@@ -7,6 +7,7 @@ import {
   START_SOCIAL_CAPITAL,
 } from '../constants.js'
 import { STARTING_TECH, getRole } from '../content/index.js'
+import { createHero, refreshHero } from '../progression.js'
 import type { GameState, Player, PlayerId, RoleId } from '../types.js'
 
 export function createGame(seed: number): GameState {
@@ -20,6 +21,7 @@ export function createGame(seed: number): GameState {
     waveTick: 0,
     spawnCursor: 0,
     pending: [],
+    pendingStakeholders: [],
 
     morale: START_MORALE,
     compliance: START_COMPLIANCE,
@@ -32,10 +34,14 @@ export function createGame(seed: number): GameState {
     unlocked: [...STARTING_TECH],
 
     maintenanceTicks: 0,
+    stakeholders: [],
+    loot: [],
+    breachedTypes: [],
+    walls: [],
     auras: [],
     overclockTicks: 0,
     overclockAmount: 1,
-    towerSlots: 12,
+    towerSlots: 18,
     storedDamage: {},
 
     nextEntityId: 1,
@@ -77,16 +83,29 @@ export function addPlayer(state: GameState, id: PlayerId, name: string): Player 
       escalationsPrevented: 0,
       towersBuilt: 0,
       socialCapitalEarned: 0,
+      kills: 0,
+      stakeholdersManaged: 0,
+      timesDowned: 0,
+      damageDealt: 0,
     },
+    // Placeholder until a role is picked; setRole rebuilds it properly.
+    hero: createHero('mouse'),
+    profileId: null,
+    killsByType: {},
+    stillTicks: 0,
+    shield: 0,
+    pendingNuke: null,
   }
   state.players[id] = player
   return player
 }
 
-export function setRole(state: GameState, id: PlayerId, role: RoleId): void {
+export function setRole(state: GameState, id: PlayerId, role: RoleId, startLevel = 1): void {
   const player = state.players[id]
   if (!player) return
   player.role = role
+  player.hero = createHero(role, startLevel)
+  refreshHero(player.hero, role)
   const def = getRole(role)
   player.abilities = def.abilities.map((a) => ({
     id: a.id,
