@@ -15,7 +15,7 @@ Read this file before your first edit. It is short on purpose.
 
 ```bash
 npm install
-npm test          # 89 tests. If these pass, the game works.
+npm test          # 96 tests. If these pass, the game works.
 npm run balance   # plays a full campaign headless and prints a per-wave table
 ```
 
@@ -61,7 +61,8 @@ someone actually emailed you.
 | Change Stakeholder behaviour | `packages/shared/src/sim/stakeholders.ts` | Yes |
 | Write a wave | `packages/shared/src/content/waves.ts` | No |
 | Add speech bubbles / ticker lines | `packages/shared/src/content/barks.ts` | No |
-| Change the palette | `packages/shared/src/content/palette.ts` | No |
+| Change the palette or add a level wing | `packages/shared/src/content/palette.ts` | No |
+| Add office furniture | `packages/client/src/render/office.ts` + `content/map.ts` | No |
 | Draw a sprite | `packages/client/src/render/pixels.ts` | No |
 | Change the map | `packages/shared/src/content/map.ts` | No |
 | Change combat rules | `packages/shared/src/sim/combat.ts` | Yes |
@@ -136,10 +137,22 @@ an animal means adding one head; the body and the Stakeholder variant come free.
 Sharing the body is deliberate — they all work here, they all wear the same
 lanyard, and the head is the only thing that distinguishes them.
 
-Palette rules, which are the whole art direction:
+Palette rules, which are the whole art direction and are covered by tests:
 - never pure white, never pure black
 - never a saturated green — that reads "healthy", and nothing here is healthy
 - `highlighter` yellow is reserved **exclusively** for things about to hurt you
+- corridors are pale, the floor is dark. Inverting it reads as a home, not an
+  office, and the whole point is that this is not a home
+
+**Levels reskin the building.** `THEMES` holds a *partial* palette override per
+level; unnamed tokens fall back to the base. Adding a wing is six lines. Role
+colours are excluded on purpose — a player must be able to find their own animal
+in any wing.
+
+**Office furniture carries a `blocks` flag.** Solid furniture takes a tile out of
+play; partitions and wall fittings do not. A cubicle farm that halves the
+buildable area is set dressing that costs you the game, and there are tests that
+will fail if you forget.
 
 ## 6. Before you open a PR
 

@@ -2,6 +2,9 @@
 *a people operations tower defence*
 
 **Status:** approved 2026-08-19 · **Slice:** Floor 3 — Shared Services
+**Revision 4 (2026-08-19):** art direction moved from "Fluorescent Rot" to
+"LUMON" — cold, institutional, retro-corporate — with a distinct palette per
+level; the floor rebuilt as a cubicle farm; right-click headcount menu.
 **Revision 3 (2026-08-19):** headcount replaces abstract tower slots — every
 process needs an owner, automated ones need fewer, approval is a three-wave queue
 and removal costs in every currency.
@@ -340,35 +343,72 @@ Mandate** (spawns from *every* edge simultaneously).
 
 ---
 
-## 8. Art direction — "Fluorescent Rot"
+## 8. Art direction — "LUMON"
 
-Stardew's chunky 16px warmth, with the lights wrong.
+Cold, institutional, retro-corporate. Pale green-white corridor lino under hard
+fluorescent light, dark navy carpet in the working areas, CRT cyan for anything a
+screen would emit, and exactly one warm colour — manila — because paper is the
+only thing in this building that was ever alive.
 
 | Token | Hex | Note |
 |---|---|---|
-| `void` | `#14121c` | letterbox |
-| `carpetDark` | `#2e2438` | carpet tile, dark weave |
-| `carpet` | `#3d3049` | carpet tile |
-| `wall` | `#4a4258` | partition |
-| `tubeGreen` | `#7f9c6a` | the fluorescent tube's actual colour |
-| `tubeGlow` | `#a8c47f` | sickly highlight |
-| `ashMauve` | `#8d6f86` | upholstery |
-| `lanyardTeal` | `#4f8f8b` | expired lanyard |
-| `deckBlue` | `#5a7fa8` | corporate template blue |
-| `manila` | `#c8a96b` | folders, paper |
-| `paper` | `#e6dfc8` | not white. never white. |
-| `highlighter` | `#e8e34a` | **danger only** |
-| `escalate` | `#c1483f` | escalation red |
-| `compliance` | `#a05fc0` | compliance purple |
+| `void` | `#0a0e13` | letterbox, near-black but blue |
+| `carpet` | `#1c2835` | navy office carpet |
+| `carpetLight` | `#243346` | worn patch |
+| `wall` | `#c9d1c8` | corridor lino — the *lit* surface |
+| `wallLight` | `#e0e5da` | under a tube directly |
+| `tubeGlow` | `#6fd3c4` | CRT cyan |
+| `manila` | `#c3a86c` | folders, desks, the one warm thing |
+| `paper` | `#eceadf` | not white. never white. |
+| `highlighter` | `#e8d84a` | **danger only** |
+| `escalate` | `#b8433c` | escalation red |
 
-Rules: cozy pixel *shapes*, queasy pixel *colours*. Never pure white, never pure
-black, never saturated green (that reads "healthy" and nothing here is healthy).
-Highlighter yellow is reserved exclusively for things about to hurt you.
+Rules, enforced by taste, code review and a test:
+- never pure white, never pure black — everything is slightly institutional
+- never a saturated green: that reads "healthy", and nothing here is healthy
+- `highlighter` is reserved **exclusively** for things about to hurt you
+- **corridors are pale and the floor is dark.** Inverting that reads as a home,
+  not an office, and the whole point is that this is not a home.
 
-**All sprites are drawn procedurally in code** from `{palette, pixelmap}` data.
-Zero binary assets. Fully diffable. The whole mood is one swappable file.
+### One wing per level
 
----
+Each level is a different wing of the building, and each wing was decorated by a
+different committee in a different decade. `THEMES` in `content/palette.ts`
+carries a **partial** override per level — anything a theme does not name falls
+back to the base palette, so adding a wing is six lines, not forty.
+
+| Level | Wing | Signage |
+|---|---|---|
+| 1 | SHARED SERVICES | *The work is mysterious and important.* |
+| 2 | POLICY & GOVERNANCE | *Please refer to the policy before contacting the policy owner.* |
+| 3 | PAYROLL | *The cutoff is the cutoff.* |
+| 4 | MOBILITY & EXPENSES | *Receipts must be legible and in the original currency.* |
+| 5 | EMPLOYEE RELATIONS | *This conversation is being minuted.* |
+| 6 | ORGANISATIONAL DESIGN | *The boxes have no names in them yet.* |
+| 7 | ONBOARDING | *Welcome. Your access will be ready by Thursday.* |
+| 8 | PEOPLE SYSTEMS | *Scheduled maintenance is a Tuesday afternoon activity.* |
+| 9 | THE BOARD FLOOR | *The Board is present and will not be addressed directly.* |
+
+Role colours are deliberately **excluded** from theming: a player must be able to
+find their own animal on the floor regardless of which wing they are standing in.
+
+Textures are baked, so a level change throws away the static layers and redraws
+them rather than trying to recolour thousands of sprites in place.
+
+### The floor is a cubicle farm
+
+Seventeen cubicles — partitions on two sides, a desk with a CRT, and a chair that
+has been adjusted in none of its four available directions — plus a photocopier
+with a sign taped to it, a fridge containing a labelled lunch from before the
+reorganisation, a vending machine whose row E is stuck, a shredder that has never
+jammed, a comms cabinet nobody will switch off, pigeonholes holding post for
+three leavers, and a wall clock that is two minutes fast on purpose.
+
+**The `blocks` flag is the important part.** Solid furniture takes a tile out of
+play; cubicle partitions and wall fittings deliberately do not. A cubicle farm
+that halves your buildable area is set dressing that costs you the game. Tests
+assert that no prop sits on a lane, no two props share a tile, and the decorative
+props outnumber the solid ones.
 
 ## 9. Architecture
 

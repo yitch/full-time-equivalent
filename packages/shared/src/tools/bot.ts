@@ -28,42 +28,95 @@ import type { GameState, RoleId, TechId, TowerTypeId, Vec2 } from '../types.js'
 
 const ROLES_IN_LOBBY: RoleId[] = ['puffin', 'rhino', 'viper']
 
-/** Tiles the bot will try, in preference order: near lanes, spread across the floor. */
+/**
+ * Candidate build tiles, ordered by greedy set cover over the three lanes.
+ *
+ * Two earlier versions were worse for instructive reasons. Striding through the
+ * list at a fixed interval meant any map change reshuffled every placement, so
+ * the balance numbers moved for reasons that were not balance. Sorting by raw
+ * coverage piled every tower where the lanes converge, which kills things at the
+ * door instead of along the route.
+ *
+ * Greedy set cover picks the tile covering the most *not-yet-covered* lane, which
+ * is what a competent player does: cover the whole walk, not the best spot.
+ */
 function candidateTiles(): Vec2[] {
   const samples: Vec2[] = []
   for (const lane of LANES) {
-    for (let d = 0; d < 60; d += 0.5) samples.push(pointAt(lane.index, d))
+    for (let d = 0; d < 60; d += 0.75) samples.push(pointAt(lane.index, d))
   }
-  const tiles: Vec2[] = []
+
+  const tiles: { tile: Vec2; covers: number[] }[] = []
   for (let y = 1; y < 23; y++) {
     for (let x = 1; x < 39; x++) {
       if (!isBuildable(x, y)) continue
-      let best = Infinity
-      for (const s of samples) best = Math.min(best, Math.hypot(s.x - x, s.y - y))
-      if (best <= 3.2) tiles.push({ x, y })
+      const covers: number[] = []
+      for (let i = 0; i < samples.length; i++) {
+        const s = samples[i]!
+        if (Math.hypot(s.x - x, s.y - y) <= 6) covers.push(i)
+      }
+      if (covers.length > 0) tiles.push({ tile: { x, y }, covers })
     }
   }
-  // Stride through the list so consecutive placements land far apart. Taking
-  // tiles in scan order piles every tower into one corner and the run reports a
-  // coverage problem as a balance problem.
-  const spread: Vec2[] = []
-  const seen = new Set<number>()
-  for (let i = 0; i < tiles.length; i++) {
-    const index = (i * 7919) % tiles.length
-    if (seen.has(index)) continue
-    seen.add(index)
-    spread.push(tiles[index]!)
+
+  const covered = new Set<number>()
+  const order: Vec2[] = []
+  const taken = new Set<number>()
+
+  // Enough picks for any plausible establishment, then the rest as fallback.
+  for (let pick = 0; pick < 40; pick++) {
+    let best = -1
+    let bestGain = 0
+    for (let i = 0; i < tiles.length; i++) {
+      if (taken.has(i)) continue
+      let gain = 0
+      for (const c of tiles[i]!.covers) if (!covered.has(c)) gain++
+      if (gain > bestGain) {
+        bestGain = gain
+        best = i
+      }
+    }
+    if (best === -1) break
+    taken.add(best)
+    for (const c of tiles[best]!.covers) covered.add(c)
+    order.push(tiles[best]!.tile)
+    // Once the whole route is covered, start again so later towers double up.
+    if (covered.size >= samples.length) covered.clear()
   }
-  return spread
+
+  for (let i = 0; i < tiles.length; i++) if (!taken.has(i)) order.push(tiles[i]!.tile)
+  return order
 }
 
 /** Cheapest-first, but always prefers a tower we do not have enough of yet. */
-function chooseTower(state: GameState): TowerTypeId | null {
-  const buildable = TOWER_IDS.filter((id) => {
+/**
+ * Best tower we can actually put up right now — which means affordable in Budget
+ * *and* in headcount. Forgetting the second one makes the bot try, fail, and
+ * stop building entirely, which reads as a balance change when it is a bug.
+ */
+/**
+ * The best tower we could build if headcount were not in the way. Used to decide
+ * whether it is worth closing an existing process to make room for a better one.
+ */
+function bestUnlockedTower(state: GameState): TowerTypeId | null {
+  const options = TOWER_IDS.filter((id) => {
     const def = TOWERS[id]
     if (!def) return false
     if (def.requires && !state.unlocked.includes(def.requires)) return false
     return def.cost <= state.budget
+  })
+  if (options.length === 0) return null
+  return options.sort((a, b) => (TOWERS[b]!.cost ?? 0) - (TOWERS[a]!.cost ?? 0))[0] ?? null
+}
+
+function chooseTower(state: GameState): TowerTypeId | null {
+  const free = headcountFree(state)
+  const buildable = TOWER_IDS.filter((id) => {
+    const def = TOWERS[id]
+    if (!def) return false
+    if (def.requires && !state.unlocked.includes(def.requires)) return false
+    if (def.cost > state.budget) return false
+    return HEADCOUNT_COST[def.channel] <= free
   })
   if (buildable.length === 0) return null
   return buildable.sort((a, b) => (TOWERS[b]!.cost ?? 0) - (TOWERS[a]!.cost ?? 0))[0] ?? null
@@ -116,14 +169,22 @@ function botSpend(state: GameState, tiles: Vec2[]): void {
     applyIntent(state, 'bot', { t: 'raise_req' })
   }
 
-  // If capacity is full but we can afford something much better, replace the
-  // weakest thing on the floor. A human would; a fair floor should too.
-  const best = chooseTower(state)
-  if (best && headcountFree(state) < HEADCOUNT_COST[TOWERS[best]!.channel]) {
-    const weakest = [...state.towers].sort((a, b) => (TOWERS[a.type]?.cost ?? 0) - (TOWERS[b.type]?.cost ?? 0))[0]
-    if (weakest && (TOWERS[weakest.type]?.cost ?? 0) < (TOWERS[best]?.cost ?? 0) / 2) {
-      applyIntent(state, 'bot', { t: 'sell', towerId: weakest.id })
-    }
+  // Decommission to upgrade. Once the establishment is full of cheap early
+  // towers, the only way to afford a better one is to close an old process and
+  // free the person running it — which is the whole headcount loop, and the bot
+  // has to do it or it stays on wave-one technology all campaign.
+  for (let swap = 0; swap < 4; swap++) {
+    const want = bestUnlockedTower(state)
+    if (!want) break
+    const wantDef = TOWERS[want]!
+    if (headcountFree(state) >= HEADCOUNT_COST[wantDef.channel]) break
+
+    const weakest = [...state.towers]
+      .filter((t) => t.expiresIn <= 0)
+      .sort((a, b) => (TOWERS[a.type]?.cost ?? 0) - (TOWERS[b.type]?.cost ?? 0))[0]
+    if (!weakest) break
+    if ((TOWERS[weakest.type]?.cost ?? 0) >= wantDef.cost / 2) break
+    applyIntent(state, 'bot', { t: 'sell', towerId: weakest.id })
   }
 
   let guard = 0
@@ -134,7 +195,8 @@ function botSpend(state: GameState, tiles: Vec2[]): void {
       (t) => !state.towers.some((existing) => existing.tile.x === t.x && existing.tile.y === t.y),
     )
     if (!tile) break
-    if (applyIntent(state, 'bot', { t: 'build', tower, tile })) break
+    // A single refusal is not a reason to stop building; try the next tile.
+    if (applyIntent(state, 'bot', { t: 'build', tower, tile }) !== null) continue
   }
 
   // Then pour leftover budget into upgrades.

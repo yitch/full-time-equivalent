@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { TICK_HZ } from '../constants.js'
-import { LANES, REQUESTS, TECH, TOWERS, WAVES, isBuildable, laneLength } from '../content/index.js'
+import {
+  LANES,
+  PALETTE,
+  PATH_TILES,
+  PROPS,
+  REQUESTS,
+  TECH,
+  THEMES,
+  TOWERS,
+  WAVES,
+  isBuildable,
+  laneLength,
+  themeFor,
+} from '../content/index.js'
 import {
   addPlayer,
   applyIntent,
@@ -48,6 +61,63 @@ describe('content integrity', () => {
 
   it('every wave has a teaching note — an undesigned wave has nothing to teach', () => {
     for (const wave of WAVES) expect(wave.teaches.length, wave.name).toBeGreaterThan(10)
+  })
+
+  it('every level has its own wing, with a full palette and no missing tokens', () => {
+    const base = Object.keys(PALETTE)
+    for (let i = 0; i < THEMES.length; i++) {
+      const { theme, palette } = themeFor(i)
+      expect(theme.department.length, theme.id).toBeGreaterThan(4)
+      expect(theme.motto.length, theme.id).toBeGreaterThan(10)
+      for (const token of base) {
+        expect(palette[token as keyof typeof palette], `${theme.id}.${token}`).toMatch(/^#[0-9a-f]{6}$/i)
+      }
+    }
+  })
+
+  it('there is a wing for every wave, and the wings look different', () => {
+    expect(THEMES.length).toBeGreaterThanOrEqual(WAVES.length)
+    const carpets = THEMES.map((_, i) => themeFor(i).palette.carpet)
+    expect(new Set(carpets).size).toBe(THEMES.length)
+  })
+
+  it('clamps an out-of-range level rather than throwing', () => {
+    expect(themeFor(-5).theme.id).toBe(THEMES[0]!.id)
+    expect(themeFor(999).theme.id).toBe(THEMES[THEMES.length - 1]!.id)
+  })
+
+  it('never uses pure white or pure black — the palette rule, enforced', () => {
+    for (let i = 0; i < THEMES.length; i++) {
+      const palette = themeFor(i).palette
+      for (const [token, value] of Object.entries(palette)) {
+        expect(value.toLowerCase(), `${i}.${token}`).not.toBe('#ffffff')
+        expect(value.toLowerCase(), `${i}.${token}`).not.toBe('#000000')
+      }
+    }
+  })
+
+  it('no piece of furniture sits on a lane', () => {
+    const onLane = PROPS.filter((p) => PATH_TILES.has(p.tile.y * 40 + p.tile.x))
+    expect(onLane.map((p) => `${p.sprite}@${p.tile.x},${p.tile.y}`)).toEqual([])
+  })
+
+  it('no two props occupy the same tile', () => {
+    const seen = new Map<string, string>()
+    const clashes: string[] = []
+    for (const p of PROPS) {
+      const key = `${p.tile.x},${p.tile.y}`
+      const existing = seen.get(key)
+      if (existing) clashes.push(`${existing} vs ${p.sprite} at ${key}`)
+      else seen.set(key, p.sprite)
+    }
+    expect(clashes).toEqual([])
+  })
+
+  it('the office is furnished but still playable', () => {
+    expect(PROPS.length).toBeGreaterThan(80)
+    expect(PROPS.filter((p) => p.blocks).length).toBeGreaterThan(30)
+    // Partitions and signage must stay non-blocking or the floor closes up.
+    expect(PROPS.filter((p) => !p.blocks).length).toBeGreaterThan(PROPS.filter((p) => p.blocks).length)
   })
 
   it('leaves room to build: the floor is not all path', () => {

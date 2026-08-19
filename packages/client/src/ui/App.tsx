@@ -17,6 +17,7 @@ import { BottomBar } from './BottomBar.js'
 import { Lobby } from './Lobby.js'
 import { Briefing, EndCard, Steering } from './Overlays.js'
 import { CharacterSheet } from './CharacterSheet.js'
+import { ContextMenu, type ContextTarget } from './ContextMenu.js'
 import { Headcount } from './Headcount.js'
 import { TechTree } from './TechTree.js'
 import { TopBar } from './TopBar.js'
@@ -51,6 +52,7 @@ export function App() {
   const [techOpen, setTechOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [hcOpen, setHcOpen] = useState(false)
+  const [ctx, setCtx] = useState<ContextTarget | null>(null)
 
   const netRef = useRef<NetClient | null>(null)
   const heldRef = useRef(new Set<string>())
@@ -128,6 +130,7 @@ export function App() {
         setTechOpen(false)
         setSheetOpen(false)
         setHcOpen(false)
+        setCtx(null)
         return
       }
       // W is taken by movement, so the second ability sits on F.
@@ -179,6 +182,14 @@ export function App() {
   const raiseReq = () => net.send({ t: 'raise_req' })
   const cancelReq = (id: number) => net.send({ t: 'cancel_req', id })
   const removeHead = (kind: ExitKind) => net.send({ t: 'remove_headcount', kind })
+  const sellTower = (towerId: number) => net.send({ t: 'sell', towerId })
+
+  const openContext = (target: { x: number; y: number; tile: Vec2 }) => {
+    const tx = Math.floor(target.tile.x)
+    const ty = Math.floor(target.tile.y)
+    const tower = state?.towers.find((t) => t.tile.x === tx && t.tile.y === ty)
+    setCtx({ x: target.x, y: target.y, towerId: tower?.id ?? null })
+  }
 
   const place = (tile: Vec2) => {
     if (!selected) return
@@ -220,6 +231,7 @@ export function App() {
           buildingTower={selected}
           onPlace={place}
           onCancel={() => setSelected(null)}
+          onContext={openContext}
         >
           {toast && <div className="toast">{toast}</div>}
 
@@ -238,7 +250,7 @@ export function App() {
 
           <div className="hint">
             <b>WASD</b> move · <b>Q F E R</b> abilities · <b>C</b> character · <b>H</b> headcount · <b>1-9</b> pick a process ·
-            click to place
+            click to place · <b>right-click</b> for headcount
             <br />
             {me?.role && ROLES[me.role]?.title}
             {state.maintenanceTicks > 0 && (
@@ -254,6 +266,15 @@ export function App() {
           )}
           {(state.phase === 'gameover' || state.phase === 'victory') && <EndCard state={state} />}
           {techOpen && <TechTree state={state} onUnlock={unlock} onClose={() => setTechOpen(false)} />}
+          {ctx && (
+            <ContextMenu
+              state={state}
+              target={ctx}
+              onSell={sellTower}
+              onRemove={removeHead}
+              onClose={() => setCtx(null)}
+            />
+          )}
           {hcOpen && (
             <Headcount
               state={state}

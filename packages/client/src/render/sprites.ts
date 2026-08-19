@@ -1,6 +1,13 @@
-import { PALETTE, TILE } from '@fte/shared'
+import { PALETTE, TILE, themeFor } from '@fte/shared'
+import type { Palette } from '@fte/shared'
 import { Texture } from 'pixi.js'
 import { SPRITES, type PixelSprite, type SpriteName } from './pixels.js'
+
+/** Drawn instead of throwing when a sprite name is wrong. Obvious on sight. */
+const MISSING: PixelSprite = {
+  key: { '.': null, x: 'escalate' },
+  rows: ['xxxx', 'x..x', 'x..x', 'xxxx'],
+}
 
 /** Darkens a hex colour. Used for the ACCENT_DARK slot so one input gives two tones. */
 export function shade(hex: string, amount: number): string {
@@ -11,11 +18,37 @@ export function shade(hex: string, amount: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
 }
 
+/**
+ * The palette in force right now. Levels reskin the whole floor, so every
+ * generated texture is keyed on the active theme and regenerated when it
+ * changes — role colours are deliberately excluded from this, because a player
+ * must be able to find their own animal in any wing of the building.
+ */
+let activePalette: Palette = { ...(PALETTE as Palette) }
+let activeThemeId = 'shared_services'
+
+export function setLevelTheme(levelIndex: number): boolean {
+  const { theme, palette } = themeFor(levelIndex)
+  if (theme.id === activeThemeId) return false
+  activePalette = palette
+  activeThemeId = theme.id
+  cache.clear()
+  return true
+}
+
+export function currentPalette(): Palette {
+  return activePalette
+}
+
+export function currentThemeId(): string {
+  return activeThemeId
+}
+
 function resolveColour(token: string | null | undefined, accent: string): string | null {
   if (!token) return null
   if (token === 'ACCENT') return accent
   if (token === 'ACCENT_DARK') return shade(accent, 0.62)
-  return (PALETTE as Record<string, string>)[token] ?? null
+  return (activePalette as Record<string, string>)[token] ?? null
 }
 
 /**
@@ -47,10 +80,10 @@ function rasterise(sprite: PixelSprite, accent: string): HTMLCanvasElement {
 const cache = new Map<string, Texture>()
 
 export function getSprite(name: SpriteName, accent: string = PALETTE.paper): Texture {
-  const key = `${name}:${accent}`
+  const key = `${activeThemeId}:${name}:${accent}`
   const hit = cache.get(key)
   if (hit) return hit
-  const sprite = SPRITES[name]
+  const sprite = (SPRITES as Record<string, PixelSprite>)[name] ?? MISSING
   const texture = Texture.from(rasterise(sprite, accent))
   texture.source.scaleMode = 'nearest'
   cache.set(key, texture)
@@ -71,7 +104,7 @@ export function makeCarpetTexture(variant: number): Texture {
   const ctx = canvas.getContext('2d')
   if (!ctx) return Texture.EMPTY
 
-  ctx.fillStyle = variant % 2 === 0 ? PALETTE.carpet : PALETTE.carpetDark
+  ctx.fillStyle = variant % 2 === 0 ? activePalette.carpet : activePalette.carpetDark
   ctx.fillRect(0, 0, TILE, TILE)
 
   // Deterministic weave: no RNG, so the floor looks the same for every player.
@@ -79,17 +112,17 @@ export function makeCarpetTexture(variant: number): Texture {
     for (let x = 0; x < TILE; x++) {
       const n = (x * 7 + y * 13 + variant * 31) % 11
       if (n === 0) {
-        ctx.fillStyle = PALETTE.carpetLight
+        ctx.fillStyle = activePalette.carpetLight
         ctx.fillRect(x, y, 1, 1)
       } else if (n === 5) {
-        ctx.fillStyle = PALETTE.carpetDark
+        ctx.fillStyle = activePalette.carpetDark
         ctx.fillRect(x, y, 1, 1)
       }
     }
   }
 
   // Tile seams. Somebody laid these in 2011 and one of them has always been loose.
-  ctx.fillStyle = PALETTE.wallShadow
+  ctx.fillStyle = activePalette.wallShadow
   ctx.globalAlpha = 0.35
   ctx.fillRect(0, 0, TILE, 1)
   ctx.fillRect(0, 0, 1, TILE)
@@ -108,17 +141,17 @@ export function makeLaneTexture(): Texture {
   const ctx = canvas.getContext('2d')
   if (!ctx) return Texture.EMPTY
 
-  ctx.fillStyle = PALETTE.wall
+  ctx.fillStyle = activePalette.wall
   ctx.fillRect(0, 0, TILE, TILE)
   for (let y = 0; y < TILE; y++) {
     for (let x = 0; x < TILE; x++) {
       if ((x * 5 + y * 3) % 9 === 0) {
-        ctx.fillStyle = PALETTE.wallLight
+        ctx.fillStyle = activePalette.wallLight
         ctx.fillRect(x, y, 1, 1)
       }
     }
   }
-  ctx.fillStyle = PALETTE.wallShadow
+  ctx.fillStyle = activePalette.wallShadow
   ctx.globalAlpha = 0.5
   ctx.fillRect(0, 0, TILE, 1)
   ctx.globalAlpha = 1
@@ -162,6 +195,27 @@ export const TOWER_LOOK: Record<string, { sprite: SpriteName; accent: string }> 
   policy_rewrite: { sprite: 'tw_papers', accent: PALETTE.manila },
 }
 
+/**
+ * Office furniture. The accent is resolved from the *live* palette, so a filing
+ * cabinet in Payroll is a different colour from the same cabinet in Employee
+ * Relations without either sprite knowing anything about levels.
+ */
+const PROP_ACCENT: Record<string, keyof Palette> = {
+  chair: 'ashMauve',
+  filing_cabinet: 'lanyardTeal',
+  bookshelf: 'manilaDark',
+  bin: 'tubeGreen',
+  vending: 'deckBlue',
+  plant_big: 'manila',
+  sofa: 'ashMauve',
+  water_dispenser: 'lanyardTeal',
+}
+
+export function propAccent(sprite: string): string {
+  const token = PROP_ACCENT[sprite]
+  return token ? activePalette[token] : activePalette.wallLight
+}
+
 export const PROP_LOOK: Record<string, SpriteName> = {
   printer: 'printer',
   plant: 'plant',
@@ -169,4 +223,31 @@ export const PROP_LOOK: Record<string, SpriteName> = {
   watercooler: 'watercooler',
   pingpong: 'pingpong',
   wellness: 'wellness',
+  part_h: 'part_h',
+  part_v: 'part_v',
+  part_corner: 'part_corner',
+  desk_crt: 'desk_crt',
+  chair: 'chair',
+  desk_pair: 'desk_pair',
+  photocopier: 'photocopier',
+  fridge: 'fridge',
+  water_dispenser: 'water_dispenser',
+  coffee: 'coffee',
+  vending: 'vending',
+  shredder: 'shredder',
+  server_rack: 'server_rack',
+  fax: 'fax',
+  filing_cabinet: 'filing_cabinet',
+  bookshelf: 'bookshelf',
+  pigeonholes: 'pigeonholes',
+  in_tray: 'in_tray',
+  noticeboard: 'noticeboard',
+  clock: 'clock',
+  fire_extinguisher: 'fire_extinguisher',
+  bin: 'bin',
+  plant_big: 'plant_big',
+  sofa: 'sofa',
+  meeting_table: 'meeting_table',
+  time_clock: 'time_clock',
+  first_aid: 'first_aid',
 }

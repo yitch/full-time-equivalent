@@ -29,7 +29,7 @@ Client on **http://localhost:5173**, game server on **ws://localhost:8787**.
 Open the client, enter a name, get a 4-letter room code, share it. Up to five.
 
 ```bash
-npm test        # 89 tests — sim, classes, progression, loot, headcount, balance regression
+npm test        # 96 tests — sim, classes, progression, loot, headcount, art, balance
 npm run balance # headless full-campaign report, no browser needed
 npm run typecheck
 ```
@@ -92,6 +92,25 @@ Letter* means you cannot be downed, only removed from the building.
 Account level, per-animal levels and a 20-item stash persist between runs against
 a `localStorage` id. No sign-up.
 
+## How it looks
+
+Cold, institutional, retro-corporate — pale green-white corridor lino under hard
+fluorescent light, dark navy carpet, CRT cyan for anything a screen emits, and
+exactly one warm colour because paper is the only thing here that was ever alive.
+
+**Every level is a different wing of the building**, and each was decorated by a
+different committee in a different decade: Shared Services, Policy & Governance,
+Payroll, Mobility & Expenses, Employee Relations, Organisational Design,
+Onboarding, People Systems, and finally The Board Floor. The department name is
+stencilled on the carpet with the wing's motto underneath — *"The work is
+mysterious and important."*
+
+The floor itself is a cubicle farm: seventeen cubicles with CRT desks and chairs
+adjusted in none of their four available directions, a photocopier with a sign
+taped to it, a fridge with a labelled lunch from before the reorganisation, a
+vending machine whose row E is stuck, and a wall clock that is two minutes fast
+on purpose.
+
 ## Headcount, and the cost of losing it
 
 Towers do not occupy slots. They consume **people** — an automated process needs
@@ -121,6 +140,10 @@ cheap option.
 
 Go over headcount and nothing is deleted. The process still exists; there is
 simply nobody to run it, so it stands idle.
+
+**Right-click anywhere on the floor** for the headcount menu — and right-click a
+process to decommission it, which frees the person running it. Both are on the
+same menu because they are the same decision from two directions.
 
 ## The Stakeholders
 
@@ -161,7 +184,7 @@ hero levelling and affixed loot, a headcount establishment with an approval
 pipeline and three redundancy routes, profile persistence, 8 waves plus the Open
 Enrollment boss, networked co-op for 1–5.
 
-**89 tests**, including a balance regression suite that plays the whole campaign
+**96 tests**, including a balance regression suite that plays the whole campaign
 headless in under a second and fails if processes stop out-damaging people.
 
 Not built yet: audio, maps 2+, the four non-Open-Enrollment bosses, crafting,

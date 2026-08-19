@@ -12,6 +12,7 @@
  */
 
 import { ANIMAL_IDS, ANIMAL_PC, ANIMAL_STAKEHOLDER } from './animals.js'
+import { OFFICE_SPRITES } from './office.js'
 
 export interface PixelSprite {
   key: Record<string, string | null>
@@ -529,8 +530,13 @@ export const IT_CHAIR = sprite([
   '..o..oo..o..',
 ])
 
+const OFFICE = Object.fromEntries(
+  Object.entries(OFFICE_SPRITES).map(([name, rows]) => [name, sprite(rows)]),
+) as Record<string, PixelSprite>
+
 export const SPRITES = {
   ...ANIMAL_SPRITES,
+  ...OFFICE,
   it_badge: IT_BADGE,
   it_laptop: IT_LAPTOP,
   it_monitor: IT_LAPTOP,
@@ -564,4 +570,13 @@ export const SPRITES = {
   chro_door: CHRO_DOOR,
 } as const
 
-export type SpriteName = keyof typeof SPRITES
+/**
+ * Sprite names are strings, not a literal union: the animals and the office
+ * furniture are both generated from data, so a union would only ever be a
+ * half-truth. `getSprite` falls back visibly rather than throwing.
+ */
+export type SpriteName = string
+
+export function hasSprite(name: string): boolean {
+  return name in SPRITES
+}

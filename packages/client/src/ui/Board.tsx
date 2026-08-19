@@ -9,6 +9,8 @@ interface Props {
   buildingTower: string | null
   onPlace: (tile: Vec2) => void
   onCancel: () => void
+  /** Right-click with nothing being placed: percentage position + tower under cursor. */
+  onContext: (target: { x: number; y: number; tile: Vec2 }) => void
   children?: React.ReactNode
 }
 
@@ -16,7 +18,7 @@ interface Props {
  * Owns the Pixi canvas and translates mouse position into tile coordinates.
  * React never touches the renderer's internals — it hands it state once a frame.
  */
-export function Board({ state, localPlayerId, buildingTower, onPlace, onCancel, children }: Props) {
+export function Board({ state, localPlayerId, buildingTower, onPlace, onCancel, onContext, children }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<GameStage | null>(null)
@@ -71,7 +73,17 @@ export function Board({ state, localPlayerId, buildingTower, onPlace, onCancel, 
       }}
       onContextMenu={(e) => {
         e.preventDefault()
-        onCancel()
+        // While placing, right-click means "never mind". Otherwise it is the menu.
+        if (buildingTower) {
+          onCancel()
+          return
+        }
+        const rect = e.currentTarget.getBoundingClientRect()
+        onContext({
+          x: ((e.clientX - rect.left) / rect.width) * 100,
+          y: ((e.clientY - rect.top) / rect.height) * 100,
+          tile: toTile(e),
+        })
       }}
     >
       <div className="canvas-host" ref={hostRef} />

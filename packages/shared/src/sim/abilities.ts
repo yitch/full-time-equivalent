@@ -1,9 +1,10 @@
 import { TICK_HZ } from '../constants.js'
-import { ROLE_BARKS, getRequest, getRole, isBuildable, pointAt } from '../content/index.js'
+import { HEADCOUNT_COST, ROLE_BARKS, getRequest, getRole, isBuildable, pointAt } from '../content/index.js'
 import { createRng, next, pick } from '../rng.js'
 import type { AbilityDef, GameState, Player, RequestEntity, Vec2 } from '../types.js'
 import { damageRequest, spawnRequest } from './combat.js'
 import { cooldownScale, isSlippedByOptimism, strike } from './heroes.js'
+import { headcountFree } from './headcount.js'
 import { pushLog } from './state.js'
 
 function dist(a: Vec2, b: Vec2): number {
@@ -187,6 +188,18 @@ function applyEffect(
     case 'build_free': {
       const count = def.amount ?? 1
       for (let i = 0; i < count; i++) {
+        // PUFFIN ships without approval, but somebody still has to run the thing.
+        // Without this the ability quietly consumes the entire establishment with
+        // intranet pages and locks the team out of building anything real.
+        if (headcountFree(state) < HEADCOUNT_COST.automation) {
+          state.events.push({
+            kind: 'bark',
+            at: { ...player.pos },
+            text: 'no owner for it',
+            playerId: player.id,
+          })
+          break
+        }
         const tile = {
           x: Math.round(player.pos.x) + (i % 2 === 0 ? i : -i),
           y: Math.round(player.pos.y) + (i % 2 === 0 ? 0 : 1),

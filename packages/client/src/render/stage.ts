@@ -9,6 +9,7 @@ import {
   PALETTE,
   PROPS,
   RARITY_INFO,
+  themeFor,
   ROLES,
   STAKEHOLDERS,
   TILE,
@@ -22,9 +23,12 @@ import {
   PROP_LOOK,
   REQUEST_LOOK,
   TOWER_LOOK,
+  currentPalette,
   getSprite,
   makeCarpetTexture,
   makeLaneTexture,
+  propAccent,
+  setLevelTheme,
 } from './sprites.js'
 
 interface FloatingText {
@@ -56,6 +60,7 @@ export class GameStage {
   private world = new Container()
   private layers = {
     floor: new Container(),
+    decor: new Container(),
     props: new Container(),
     towers: new Container(),
     requests: new Container(),
@@ -76,6 +81,7 @@ export class GameStage {
   private ghost = new Graphics()
   private rangeRing = new Graphics()
   private seenEvents = 0
+  private levelIndex = 0
   private ready = false
 
   async mount(host: HTMLElement): Promise<void> {
@@ -96,6 +102,7 @@ export class GameStage {
 
     this.world.addChild(
       this.layers.floor,
+      this.layers.decor,
       this.layers.props,
       this.layers.towers,
       this.layers.requests,
@@ -108,6 +115,7 @@ export class GameStage {
     this.app.stage.addChild(this.world)
     this.layers.overlay.addChild(this.rangeRing, this.ghost)
 
+    setLevelTheme(0)
     this.drawFloor()
     this.drawProps()
     this.ready = true
@@ -126,6 +134,26 @@ export class GameStage {
   }
 
   // ─────────────────────────────────────────────────────────────── static art
+
+  /**
+   * Levels reskin the whole building. Textures are baked, so when the theme
+   * changes we throw the static layers away and redraw them rather than trying
+   * to recolour thousands of sprites in place.
+   */
+  private applyTheme(levelIndex: number): void {
+    if (!setLevelTheme(levelIndex)) return
+    this.layers.floor.removeChildren().forEach((c) => c.destroy({ children: true }))
+    this.layers.decor.removeChildren().forEach((c) => c.destroy({ children: true }))
+    this.layers.props.removeChildren().forEach((c) => c.destroy({ children: true }))
+    for (const [, node] of this.towerSprites) node.destroy({ children: true })
+    this.towerSprites.clear()
+    for (const [, node] of this.requestSprites) node.destroy({ children: true })
+    this.requestSprites.clear()
+    for (const [, node] of this.playerSprites) node.destroy({ children: true })
+    this.playerSprites.clear()
+    this.drawFloor()
+    this.drawProps()
+  }
 
   private drawFloor(): void {
     const carpet = [0, 1, 2].map((v) => makeCarpetTexture(v))
@@ -159,8 +187,33 @@ export class GameStage {
     // The fluorescent tube. It hums. You have stopped hearing it.
     const glow = new Graphics()
     glow.rect(0, 0, BOARD_W, BOARD_H)
-    glow.fill({ color: PALETTE.tubeGreen, alpha: 0.05 })
+    glow.fill({ color: currentPalette().tubeGlow, alpha: 0.045 })
     this.layers.floor.addChild(glow)
+
+    // The wing you are standing in, stencilled on the floor like a fire exit.
+    const { theme } = themeFor(this.levelIndex)
+    const sign = new Text({
+      text: theme.department,
+      style: {
+        fontFamily: 'Silkscreen, monospace',
+        fontSize: 10,
+        fill: currentPalette().wallShadow,
+        letterSpacing: 3,
+      },
+    })
+    sign.x = Math.round((BOARD_W - sign.width) / 2)
+    sign.y = BOARD_H - 16
+    sign.alpha = 0.5
+    this.layers.floor.addChild(sign)
+
+    const motto = new Text({
+      text: theme.motto,
+      style: { fontFamily: 'IBM Plex Mono, monospace', fontSize: 5, fill: currentPalette().wallShadow },
+    })
+    motto.x = Math.round((BOARD_W - motto.width) / 2)
+    motto.y = BOARD_H - 5
+    motto.alpha = 0.4
+    this.layers.floor.addChild(motto)
 
     // Lane labels, in the font of a sign nobody has updated.
     for (const l of LANES) {
@@ -169,7 +222,7 @@ export class GameStage {
         style: {
           fontFamily: 'Silkscreen, monospace',
           fontSize: 6,
-          fill: PALETTE.wallLight,
+          fill: currentPalette().wallShadow,
           letterSpacing: 1,
         },
       })
@@ -184,13 +237,19 @@ export class GameStage {
     for (const prop of PROPS) {
       const name = PROP_LOOK[prop.sprite]
       if (!name) continue
-      const sprite = new Sprite(getSprite(name))
+      const sprite = new Sprite(getSprite(name, propAccent(prop.sprite)))
       sprite.x = prop.tile.x * TILE
       sprite.y = prop.tile.y * TILE
-      this.layers.props.addChild(sprite)
+      // Partitions and wall fittings sit under everything: they are the grid of
+      // the floor, not obstacles, and a tower must be able to stand on them.
+      if (prop.blocks) this.layers.props.addChild(sprite)
+      else {
+        sprite.alpha = 0.9
+        this.layers.decor.addChild(sprite)
+      }
     }
 
-    const door = new Sprite(getSprite('chro_door'))
+    const door = new Sprite(getSprite('chro_door', currentPalette().wallLight))
     door.x = CHRO_DOOR.x * TILE
     door.y = (CHRO_DOOR.y - 1) * TILE
     this.layers.props.addChild(door)
@@ -208,6 +267,10 @@ export class GameStage {
 
   sync(state: GameState, input: StageInput): void {
     if (!this.ready) return
+    if (state.waveIndex !== this.levelIndex) {
+      this.levelIndex = state.waveIndex
+      this.applyTheme(this.levelIndex)
+    }
     this.syncRequests(state, input)
     this.syncStakeholders(state)
     this.syncLoot(state)
