@@ -15,7 +15,7 @@ Read this file before your first edit. It is short on purpose.
 
 ```bash
 npm install
-npm test          # 145 tests. If these pass, the game works.
+npm test          # 161 tests. If these pass, the game works.
 npm run balance   # plays a full campaign headless and prints a per-wave table
 npm run shots     # drives headless Chrome and regenerates the README screenshots
 npm run build && node packages/server/dist/index.js   # production shape: one process on :8787
@@ -71,6 +71,8 @@ someone actually emailed you.
 | Move or add a recharge point | `packages/shared/src/content/map.ts` (`RECHARGE_SPRITES`) | No |
 | Change Bandwidth costs | `packages/shared/src/sim/heroes.ts` (`abilityCost`) | Yes |
 | Change the fast-forward cap | `packages/shared/src/constants.ts` (`MAX_SPEED`) | No |
+| Change the zoom cap or step | `packages/shared/src/constants.ts` (`MAX_ZOOM`) | No |
+| Change camera behaviour | `packages/client/src/render/camera.ts` | No |
 | Change what a defence says it contributes | `content/towers.ts` (`contributes`) | No |
 | Change unlock levels for animals | `packages/shared/src/content/unlocks.ts` | No |
 | Add a HUD icon | `packages/client/src/ui/Icon.tsx` | No |
@@ -162,6 +164,12 @@ development. If you split them, set `VITE_SERVER_URL` at build time.
 hosts set `NODE_ENV=production`, which makes a bare `npm ci` skip them. Every
 build command in this repo says `npm ci --include=dev`. Changing that breaks
 deploys and not local development, so it fails somewhere you are not looking.
+
+**Camera maths lives outside the Pixi class.** `render/camera.ts` is pure
+functions over `{zoom, pan}` so it can be tested without a canvas, and
+`stage.ts` only applies the result. Anything that converts between screen, board
+and tile coordinates belongs there — a click landing one tile off when zoomed is
+the kind of bug that is invisible until someone is mid-wave.
 
 **Fast-forward adds steps, it does not shorten the tick.** `stepsForTick(speed)`
 returns how many `step()` calls a driver runs per real tick. Keep it that way:

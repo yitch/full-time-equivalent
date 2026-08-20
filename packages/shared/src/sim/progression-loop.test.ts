@@ -214,3 +214,83 @@ describe('the intern', () => {
     )
   })
 })
+
+describe('interns are equipped, never issued', () => {
+  it('a fresh hero has an empty intern slot', () => {
+    const hero = createHero('wolf')
+    expect(hero.equipment.intern).toBeNull()
+  })
+
+  it('nothing puts one on the floor until you equip it', () => {
+    const state = game('wolf')
+    state.budget = 4000
+    step(state)
+    playWaves(state, 2)
+    expect(state.players.p1!.hero.equipment.intern).toBeNull()
+    expect(state.interns).toEqual([])
+  })
+
+  it('an intern in the bag does nothing at all', () => {
+    const state = game('wolf')
+    state.phase = 'wave'
+    state.players.p1!.hero.bag.push({
+      id: 'bagged',
+      base: 'summer_intern',
+      name: 'Summer Intern',
+      slot: 'intern',
+      rarity: 'common',
+      ilvl: 3,
+      affixes: [{ stat: 'internPower', value: 1 }],
+    })
+    for (let i = 0; i < TICK_HZ * 3; i++) step(state)
+    expect(state.interns).toEqual([])
+  })
+
+  it('equipping is what summons them, and unequipping sends them home', () => {
+    const state = game('wolf')
+    state.phase = 'wave'
+    const hero = state.players.p1!.hero
+    hero.bag.push({
+      id: 'bagged',
+      base: 'summer_intern',
+      name: 'Summer Intern',
+      slot: 'intern',
+      rarity: 'common',
+      ilvl: 3,
+      affixes: [{ stat: 'internPower', value: 1 }],
+    })
+    expect(applyIntent(state, 'p1', { t: 'equip', artifactId: 'bagged' })).toBeNull()
+    step(state)
+    expect(state.interns.length).toBe(1)
+
+    expect(applyIntent(state, 'p1', { t: 'unequip', slot: 'intern' })).toBeNull()
+    step(state)
+    expect(state.interns).toEqual([])
+  })
+
+  it('WOLF’s All Hands summons colleagues, not interns', () => {
+    const state = game('wolf')
+    state.phase = 'wave'
+    state.players.p1!.pos = { x: 20, y: 12 }
+    expect(applyIntent(state, 'p1', { t: 'ability', key: 'R' })).toBeNull()
+    step(state)
+
+    // Temporary help appears...
+    const temporary = state.towers.filter((t) => t.expiresIn > 0)
+    expect(temporary.length).toBeGreaterThan(1)
+    // ...and it is emphatically not an intern.
+    expect(state.interns).toEqual([])
+    expect(state.players.p1!.hero.equipment.intern).toBeNull()
+  })
+
+  it('the temporary help actually leaves', () => {
+    const state = game('wolf')
+    state.phase = 'wave'
+    state.players.p1!.pos = { x: 20, y: 12 }
+    applyIntent(state, 'p1', { t: 'ability', key: 'R' })
+    step(state)
+    expect(state.towers.some((t) => t.expiresIn > 0)).toBe(true)
+    for (let i = 0; i < TICK_HZ * 30; i++) step(state)
+    expect(state.towers.some((t) => t.expiresIn > 0)).toBe(false)
+  })
+})

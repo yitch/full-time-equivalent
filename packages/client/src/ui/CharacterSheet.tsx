@@ -218,6 +218,11 @@ export function CharacterSheet({
               ) : (
                 <div className="artifact empty" key={slot}>
                   <div className="ar">{slot} — empty</div>
+                  {slot === 'intern' && (
+                    <div className="aa" style={{ color: 'var(--paper-dim)' }}>
+                      Interns are not issued. Find one on the floor and equip it here.
+                    </div>
+                  )}
                 </div>
               )
             })}

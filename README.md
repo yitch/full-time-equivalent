@@ -101,6 +101,13 @@ dysfunctions. **Every class's flaw is its strongest ability and its price.**
 | **VIPER** — Vindictive Person Endangering Results | Permanently stronger with every breach | You need the team to fail. |
 | **DODO** — Dangerously Outdated Opinions | +140% damage | Cooldown reduction does nothing and your towers never upgrade. |
 
+## Camera
+
+Scroll to zoom, up to 4x, centred on the cursor so the thing you are looking at
+stays put. Zoomed in, the camera follows your animal — until you middle-drag to
+look somewhere else, at which point it leaves you alone for a couple of seconds.
+Double-click to fit the whole floor again.
+
 ## Pace
 
 Space pauses. `-` and `=` change the speed, or click the pace control in the top
@@ -141,9 +148,11 @@ You start with a **Company Laptop (4 years old)** and a **Lanyard (already
 expired)**, and everything on the floor drops loot from wave one — walk over it
 to pick it up.
 
-There is also an **intern**. They drop like any other equipment, follow you
-around, help at roughly the level you would expect, and can be knocked over, at
-which point the placement is briefly suspended and then resumes.
+There is also an **intern** — but nobody assigns you one. They drop like any
+other equipment and sit in your bag doing nothing until you equip them into the
+intern slot. Once you do, they follow you around, help at roughly the level you
+would expect, and can be knocked over, at which point the placement is briefly
+suspended and then resumes.
 
 Elites and Stakeholders drop **corporate artifacts** — five slots, five rarities
 named in performance-review language (*Standard Issue* → *Career Defining*),

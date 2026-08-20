@@ -161,11 +161,14 @@ export const ROLES: Record<RoleId, RoleDef> = {
         cooldownSeconds: 45,
         damage: 30,
       }),
-      ability('R', 'all_hands', 'All Hands', 'Three people who were doing something important are now doing this.', 'summon_intern', {
-        cooldownSeconds: 100,
-        durationSeconds: 22,
-        amount: 3,
-      }),
+      ability(
+        'R',
+        'all_hands',
+        'All Hands',
+        'Three people who were doing something important are now doing this instead. They go back in twenty seconds.',
+        'summon_help',
+        { cooldownSeconds: 100, durationSeconds: 22, amount: 3 },
+      ),
     ],
   },
 

@@ -375,17 +375,24 @@ function applyEffect(
       break
     }
 
-    case 'summon_intern': {
-      // Doubles as "Sign The Req": permanent slots plus the onboarding that follows.
-      if (def.id === 'sign_the_req') {
-        state.headcount.approved += def.amount ?? 2
-        for (let i = 0; i < 6; i++) spawnRequest(state, 'onboarding_packet', 2, 0, -i * 0.8)
-        pushLog(state, `${player.name} signed the req. Six Onboarding Packets are already in the lane.`)
-      } else {
+    case 'summon_help': {
+      // Colleagues pulled off whatever they were doing, as temporary desks that
+      // expire. Deliberately NOT the intern system: an intern is a thing you
+      // equip and keep, and nothing should put one on the floor behind your back.
+      const wanted = def.amount ?? 1
+      let placed = 0
+      for (let i = 0; placed < wanted && i < 12; i++) {
+        const angle = (i / 6) * Math.PI * 2
+        const tile = {
+          x: Math.round(player.pos.x + Math.cos(angle) * (1 + Math.floor(i / 6))),
+          y: Math.round(player.pos.y + Math.sin(angle) * (1 + Math.floor(i / 6))),
+        }
+        if (!isBuildable(tile.x, tile.y)) continue
+        if (state.towers.some((t) => t.tile.x === tile.x && t.tile.y === tile.y)) continue
         state.towers.push({
           id: state.nextEntityId++,
           type: 'intranet',
-          tile: { x: Math.round(player.pos.x), y: Math.round(player.pos.y) },
+          tile,
           level: 2,
           cooldown: 0,
           offline: false,
@@ -394,6 +401,10 @@ function applyEffect(
           expiresIn: Math.round((def.durationSeconds ?? 20) * TICK_HZ),
           unstaffed: false,
         })
+        placed++
+      }
+      if (placed > 0) {
+        pushLog(state, `${player.name} pulled ${placed} colleague(s) off what they were doing.`)
       }
       break
     }

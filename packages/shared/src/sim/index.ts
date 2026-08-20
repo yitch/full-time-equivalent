@@ -166,6 +166,7 @@ export function step(state: GameState): GameState {
   }
 
   stepPlayers(state)
+  stepTemporary(state)
   syncInterns(state)
   stepInterns(state)
   decayAuras(state)
@@ -387,10 +388,6 @@ function stepTowers(state: GameState): void {
   const survivors: TowerEntity[] = []
 
   for (const tower of state.towers) {
-    if (tower.expiresIn > 0) {
-      tower.expiresIn--
-      if (tower.expiresIn === 0) continue
-    }
     const def = getTower(tower.type)
 
     if (def.channel === 'automation' && state.maintenanceTicks > 0) {
@@ -584,6 +581,27 @@ function requestsFightBack(state: GameState, player: Player): void {
     internDamage += getRequest(req.type).moraleDamage * (req.escalated ? 2.4 : 1)
   }
   if (internDamage > 0) damageIntern(state, intern, internDamage)
+}
+
+/**
+ * Temporary help goes home on a wall clock, not a wave clock.
+ *
+ * This lived inside the wave loop and therefore froze the moment a wave ended,
+ * so colleagues pulled in by All Hands would still be standing there during the
+ * next briefing. Same mistake as the redundancy consultations: anything with a
+ * timer measured in seconds has to tick in every phase.
+ */
+function stepTemporary(state: GameState): void {
+  if (state.towers.every((t) => t.expiresIn <= 0)) return
+  const surviving: TowerEntity[] = []
+  for (const tower of state.towers) {
+    if (tower.expiresIn > 0) {
+      tower.expiresIn--
+      if (tower.expiresIn === 0) continue
+    }
+    surviving.push(tower)
+  }
+  state.towers = surviving
 }
 
 /** Drops decay so the floor does not silt up over a long run. */

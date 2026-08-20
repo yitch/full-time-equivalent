@@ -293,7 +293,7 @@ export function App() {
 
           <div className="hint">
             <b>WASD</b> move · <b>Q F E R</b> abilities · <b>C</b> character · <b>H</b> headcount ·{' '}
-            <b>TAB</b> research · <b>?</b> tutorial · <b>space</b> pause · <b>-/=</b> pace · <b>1-9</b> pick a process · click to place ·{' '}
+            <b>TAB</b> research · <b>?</b> tutorial · <b>space</b> pause · <b>-/=</b> pace · <b>scroll</b> zoom · <b>1-9</b> pick a process · click to place ·{' '}
             <b>right-click</b> for headcount
             <br />
             {me?.role && ROLES[me.role]?.title}

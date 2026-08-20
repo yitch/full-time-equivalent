@@ -237,7 +237,7 @@ export type AbilityKind =
   | 'slow_lane'
   | 'purge_tag'
   | 'grant_social'
-  | 'summon_intern'
+  | 'summon_help'
   | 'despawn'
   | 'cone'
   | 'store_damage'

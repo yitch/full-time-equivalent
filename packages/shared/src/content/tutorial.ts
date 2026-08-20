@@ -93,7 +93,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'hero',
     title: 'You are on the floor too',
     body: 'WASD to move. Q, F, E and R for your abilities. You auto-attack whatever is in reach, and anything you stand next to hurts you back. Standing in the queue is doing the work, and it costs you.',
-    aside: 'Go down and a colleague standing over you gets you back four times faster than waiting.',
+    aside: 'Scroll to zoom in on the mess; the camera follows you. Middle-drag to look around, double-click to fit the floor again. Go down and a colleague standing over you gets you back four times faster than waiting.',
     icon: 'human',
     anchor: 'board',
     doneWhen: 'moved',
@@ -124,9 +124,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 'intern',
-    title: 'You have been assigned an intern',
-    body: 'Interns drop like any other equipment and go in their own slot. They follow you around, help at roughly the level you would expect, and can be knocked over — at which point the placement is briefly suspended and then resumes.',
-    aside: 'Supervising them is described in your objectives as a development opportunity for you both.',
+    title: 'Interns are found, not issued',
+    body: 'Nobody is going to assign you one. Interns drop like any other equipment, go in their own slot, and do nothing at all until you press C and equip them. Once you do, they follow you around and help at roughly the level you would expect.',
+    aside: 'Knock one over and the placement is briefly suspended, then resumes. Supervising them is described in your objectives as a development opportunity for you both.',
     icon: 'headcount',
     anchor: 'board',
   },
@@ -165,4 +165,4 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
 ]
 
-export const TUTORIAL_VERSION = 3
+export const TUTORIAL_VERSION = 4

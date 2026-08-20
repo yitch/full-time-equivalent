@@ -2,6 +2,8 @@
 *a people operations tower defence*
 
 **Status:** approved 2026-08-19 · **Slice:** Floor 3 — Shared Services
+**Revision 9 (2026-08-21):** a zoom camera, and interns made unambiguously
+equipment-only.
 **Revision 8 (2026-08-20):** a shared pace control (pause / 1x / 2x / 3x), and
 the whole game collapsed into a single deployable process.
 **Revision 7 (2026-08-20):** contractors as the instant route to headcount, the
@@ -290,11 +292,20 @@ equipment system announces itself instead of waiting for an elite.
 
 ### The intern
 
-A sixth equipment slot. Interns drop like anything else — Summer Intern,
-Placement Student, Graduate Trainee, Apprentice — and equipping one puts a
-follower on the floor who trails you, attacks what you attack, and can be knocked
-over, at which point the placement is briefly suspended and then resumes. Kills
-are credited to the owner so passives, XP and specialist multipliers all apply.
+A sixth equipment slot, and **only** an equipment slot. Interns drop like
+anything else — Summer Intern, Placement Student, Graduate Trainee, Apprentice —
+and do nothing whatsoever until equipped. Nothing in the game puts one on the
+floor on your behalf; `syncInterns` reconciles purely against
+`equipment.intern`, and a test asserts that an unequipped run never has one.
+
+Equipping puts a follower on the floor who trails you, attacks what you attack,
+and can be knocked over, at which point the placement is briefly suspended and
+then resumes. Kills are credited to the owner so passives, XP and specialist
+multipliers all apply.
+
+WOLF's ultimate used to be typed `summon_intern` while actually spawning a
+temporary tower, which made it look like part of this system. It is
+`summon_help` now and spawns the colleagues it claims to.
 
 Supervising them is, per your objectives, a development opportunity for you both.
 
@@ -522,6 +533,21 @@ trigger and advance themselves the moment the player does the thing; nobody
 should have to click Next to acknowledge that they have just built a tower.
 Skip is always one click away and remembered in `localStorage`; `?` brings it
 back and dismisses whatever panel is on top first.
+
+## 8b2. Camera
+
+Scroll wheel zooms to 4x, about the cursor, so whatever you are pointing at stays
+under the pointer — zooming about the centre makes the floor lurch every notch
+and reads as a bug even when the maths is right. Middle-drag pans, double-click
+refits, and the pan is clamped so the view never leaves the floor.
+
+Zoomed in, the camera eases toward your animal, but only after ninety ticks with
+no manual panning; otherwise it fights the player for control of the view.
+
+The maths is pure functions in `client/src/render/camera.ts`, tested without a
+canvas. That matters because the failure mode — a click landing one tile off once
+you zoom — is invisible until someone is mid-wave and cannot work out why their
+tower went in the wrong place.
 
 ## 8c. Pace
 

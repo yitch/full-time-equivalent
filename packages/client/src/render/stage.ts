@@ -22,6 +22,15 @@ import {
 import type { GameState, PlayerId, Vec2 } from '@fte/shared'
 import { Application, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import {
+  type Camera,
+  centreOn,
+  clampPan,
+  createCamera,
+  logicalToTile,
+  panBy,
+  zoomAbout,
+} from './camera.js'
+import {
   PROP_LOOK,
   REQUEST_LOOK,
   TOWER_LOOK,
@@ -88,6 +97,11 @@ export class GameStage {
   private levelIndex = 0
   private ready = false
 
+  /** Camera. 1 fits the whole floor; above that you are looking at part of it. */
+  private camera: Camera = createCamera()
+  /** Ticks since the player last panned by hand, so follow does not fight them. */
+  private sinceManualPan = 9999
+
   async mount(host: HTMLElement): Promise<void> {
     await this.app.init({
       background: PALETTE.void,
@@ -126,6 +140,61 @@ export class GameStage {
     this.ready = true
 
     this.app.ticker.add(() => this.animate())
+  }
+
+  // ─────────────────────────────────────────────────────────────────── camera
+
+  get zoomLevel(): number {
+    return this.camera.zoom
+  }
+
+  private applyCamera(): void {
+    this.world.scale.set(this.camera.zoom)
+    this.world.position.set(Math.round(this.camera.pan.x), Math.round(this.camera.pan.y))
+  }
+
+  zoomAt(factor: number, logicalX: number, logicalY: number): void {
+    this.camera = zoomAbout(this.camera, factor, { x: logicalX, y: logicalY })
+    this.sinceManualPan = 0
+    this.applyCamera()
+  }
+
+  panBy(dx: number, dy: number): void {
+    this.camera = panBy(this.camera, dx, dy)
+    this.sinceManualPan = 0
+    this.applyCamera()
+  }
+
+  resetCamera(): void {
+    this.camera = createCamera()
+    this.sinceManualPan = 9999
+    this.applyCamera()
+  }
+
+  logicalToTile(logicalX: number, logicalY: number): Vec2 {
+    return logicalToTile(this.camera, { x: logicalX, y: logicalY })
+  }
+
+  /**
+   * When zoomed in, drift toward whoever you are playing — but only once the
+   * player has stopped panning by hand, or the camera argues with them.
+   */
+  private followLocalPlayer(state: GameState, localPlayerId: PlayerId | null): void {
+    if (this.camera.zoom <= 1) return
+    this.sinceManualPan++
+    if (this.sinceManualPan < 90) return
+    const player = localPlayerId ? state.players[localPlayerId] : null
+    if (!player?.connected) return
+
+    const target = centreOn(this.camera, player.pos)
+    this.camera = clampPan({
+      zoom: this.camera.zoom,
+      pan: {
+        x: this.camera.pan.x + (target.pan.x - this.camera.pan.x) * 0.06,
+        y: this.camera.pan.y + (target.pan.y - this.camera.pan.y) * 0.06,
+      },
+    })
+    this.applyCamera()
   }
 
   destroy(): void {
@@ -297,6 +366,7 @@ export class GameStage {
     this.syncInterns(state)
     this.syncPlayers(state, input)
     this.syncGhost(state, input)
+    this.followLocalPlayer(state, input.localPlayerId)
     this.drainEvents(state)
   }
 

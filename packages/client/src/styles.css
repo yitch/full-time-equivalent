@@ -690,3 +690,12 @@ button.chunky:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .pace .pb:hover { border-color: var(--tube-glow); color: var(--paper); }
 .pace .pb.on { background: var(--tube-glow); color: var(--void); border-color: var(--tube-glow); }
+
+/* ── camera ──────────────────────────────────────────────────────────────── */
+
+.zoom-chip {
+  position: absolute; top: 8px; left: 8px; z-index: 10;
+  font-size: 8px; color: var(--paper-dim);
+  background: rgba(10, 14, 19, 0.82); padding: 3px 7px;
+  border: 1px solid var(--wall); pointer-events: none;
+}

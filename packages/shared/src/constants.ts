@@ -22,6 +22,13 @@ export const MAX_PLAYERS = 5
  * "miss what happened", which is not a speed control, it is a skip button.
  */
 export const MAX_SPEED = 3
+
+/**
+ * How far in the camera goes. Past about 4x a 16px tile is bigger than a desk in
+ * real life and you lose the shape of the floor, which is most of the game.
+ */
+export const MAX_ZOOM = 4
+export const ZOOM_STEP = 1.15
 export const SPEED_STEPS = [0, 1, 2, 3] as const
 
 /**
