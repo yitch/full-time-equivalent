@@ -1,5 +1,6 @@
 import {
   ARTIFACT_SLOTS,
+  PERK_BY_ID,
   PERCENT_STATS,
   RARITY_INFO,
   ROLES,
@@ -8,6 +9,7 @@ import {
   canSpendTalent,
 } from '@fte/shared'
 import type { Artifact, ArtifactSlot, GameState, PlayerId, StatKey, TalentBranch } from '@fte/shared'
+import { Icon } from './Icon.js'
 
 const BRANCH_ORDER: TalentBranch[] = ['lean_in', 'grow_out', 'weaponise']
 
@@ -26,6 +28,9 @@ const STAT_LABEL: Record<StatKey, string> = {
   budgetGain: 'Budget gain',
   xpGain: 'XP gain',
   regen: 'HP per second',
+  maxBandwidth: 'Max Bandwidth',
+  focus: 'Bandwidth per second',
+  internPower: 'Intern damage',
 }
 
 function fmt(stat: StatKey, value: number): string {
@@ -118,6 +123,10 @@ export function CharacterSheet({
             <div className="pts" style={{ color: hero.talentPoints > 0 ? 'var(--social)' : 'var(--paper-dim)' }}>
               {hero.talentPoints} talent point{hero.talentPoints === 1 ? '' : 's'}
             </div>
+            <div className="bwline">
+              <Icon name="automation" size={9} colour="var(--tube-glow)" /> Bandwidth{' '}
+              {Math.round(hero.bandwidth)}/{Math.round(hero.maxBandwidth)}
+            </div>
           </div>
         </div>
 
@@ -176,6 +185,25 @@ export function CharacterSheet({
                 </div>
               ))}
             </div>
+
+            {hero.perks.length > 0 && (
+              <>
+                <h2 style={{ marginTop: 14 }}>DEVELOPMENT RECORD</h2>
+                <div className="perklist">
+                  {hero.perks.map((id) => {
+                    const perk = PERK_BY_ID[id]
+                    if (!perk) return null
+                    return (
+                      <div className="perkrow" key={id} title={perk.flavour}>
+                        <Icon name={perk.icon} size={9} colour="var(--social)" />
+                        <span className="pn">{perk.name}</span>
+                        <span className="pe">{perk.effect}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
 
             <h2 style={{ marginTop: 14 }}>EQUIPPED</h2>
             {ARTIFACT_SLOTS.map((slot) => {

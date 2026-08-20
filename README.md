@@ -29,7 +29,7 @@ Client on **http://localhost:5173**, game server on **ws://localhost:8787**.
 Open the client, enter a name, get a 4-letter room code, share it. Up to five.
 
 ```bash
-npm test        # 110 tests — sim, classes, progression, loot, headcount, art, clarity
+npm test        # 126 tests — sim, classes, progression, loot, headcount, art, clarity
 npm run balance # headless full-campaign report, no browser needed
 npm run typecheck
 ```
@@ -72,17 +72,39 @@ dysfunctions. **Every class's flaw is its strongest ability and its price.**
 | **VIPER** — Vindictive Person Endangering Results | Permanently stronger with every breach | You need the team to fail. |
 | **DODO** — Dangerously Outdated Opinions | +140% damage | Cooldown reduction does nothing and your towers never upgrade. |
 
+## Bandwidth, and where you go to get it back
+
+Every ability is a meeting, a call, or a difficult conversation, and every one
+spends **Bandwidth**. It trickles back anywhere on the floor and returns seven
+times faster at the water cooler, the canteen, the vending machine, the breakout
+sofa or the wellness room — all ringed on the carpet so you can find them from
+across the office. Running dry mid-wave and having to walk to the kitchen is the
+intended experience.
+
 ## Heroes on the floor, and levels that stick
 
 Heroes are deployed units, not cursors. They walk the floor, auto-attack, take
 damage from anything they stand next to, and can be **downed** — a colleague
 standing over you revives you four times faster than waiting.
 
-They also **level**. XP is shared across the team including tower kills, one
-talent point per level, three branches per class that always mean the same three
-things: **lean in** to the dysfunction, **grow out** of it, or **weaponise** it.
-Levelling to 30 gives 29 points and maxing everything costs 33, so the build is a
-choice.
+They also **level, every single wave, guaranteed** — delivered as a
+**Performance Review** where your line manager offers three development
+opportunities and you take one. They are all things an organisation would
+genuinely give you instead of money: a Wellbeing App Subscription, Exposure To
+Senior Leadership, Personal Protective Equipment (for an office).
+
+Each level also gives a talent point. Three branches per class that always mean
+the same three things: **lean in** to the dysfunction, **grow out** of it, or
+**weaponise** it. Levelling to 30 gives 29 points and maxing everything costs 33,
+so the build is a choice.
+
+You start with a **Company Laptop (4 years old)** and a **Lanyard (already
+expired)**, and everything on the floor drops loot from wave one — walk over it
+to pick it up.
+
+There is also an **intern**. They drop like any other equipment, follow you
+around, help at roughly the level you would expect, and can be knocked over, at
+which point the placement is briefly suspended and then resumes.
 
 Elites and Stakeholders drop **corporate artifacts** — five slots, five rarities
 named in performance-review language (*Standard Issue* → *Career Defining*),
@@ -205,7 +227,7 @@ hero levelling and affixed loot, a headcount establishment with an approval
 pipeline and three redundancy routes, profile persistence, 8 waves plus the Open
 Enrollment boss, networked co-op for 1–5.
 
-**110 tests**, including a balance regression suite that plays the whole campaign
+**126 tests**, including a balance regression suite that plays the whole campaign
 headless in under a second and fails if processes stop out-damaging people.
 
 Not built yet: audio, maps 2+, the four non-Open-Enrollment bosses, crafting,

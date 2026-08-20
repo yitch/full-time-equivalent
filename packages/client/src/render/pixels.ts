@@ -534,9 +534,45 @@ const OFFICE = Object.fromEntries(
   Object.entries(OFFICE_SPRITES).map(([name, rows]) => [name, sprite(rows)]),
 ) as Record<string, PixelSprite>
 
+/** The intern. Smaller than you, keener than you, on a lanyard that works. */
+export const PC_INTERN = sprite([
+  '....####....',
+  '...#hhhh#...',
+  '..#hssssh#..',
+  '..#sosos#s..',
+  '..#ssssss#..',
+  '...#sSSs#...',
+  '...#cccc#...',
+  '..#cccccc#..',
+  '.s#cpppc#s..',
+  '.s#cccccc#s.',
+  '..#cCccCc#..',
+  '..#oo#oo#...',
+  '..ooo.ooo...',
+  '............',
+])
+
+/** Intern item icon, 12x12. */
+export const IT_INTERN = sprite([
+  '....####....',
+  '...#hhhh#...',
+  '..#ssssss#..',
+  '..#sosos#...',
+  '..#ssssss#..',
+  '...#ssss#...',
+  '...#cccc#...',
+  '..#cccccc#..',
+  '..#cpppcc#..',
+  '..#cccccc#..',
+  '..#oo##oo#..',
+  '............',
+])
+
 export const SPRITES = {
   ...ANIMAL_SPRITES,
   ...OFFICE,
+  pc_intern: PC_INTERN,
+  it_intern: IT_INTERN,
   it_badge: IT_BADGE,
   it_laptop: IT_LAPTOP,
   it_monitor: IT_LAPTOP,

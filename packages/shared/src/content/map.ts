@@ -172,6 +172,34 @@ export const PROPS: Prop[] = [
   decor(16, 12, 'clock', 'Wall clock (stopped)'),
 ]
 
+/**
+ * Where you go to get your Bandwidth back.
+ *
+ * Every one of these is somewhere people genuinely disappear to when they have
+ * nothing left: the water cooler, the canteen, and the room that is officially
+ * for wellness. Standing near one recharges you several times faster than
+ * standing anywhere else, which makes leaving the fight a real decision.
+ */
+export const RECHARGE_SPRITES = new Set([
+  'water_dispenser',
+  'coffee',
+  'fridge',
+  'vending',
+  'sofa',
+  'wellness',
+])
+
+/** Tiles per side of a recharge point that still count as "at" it. */
+export const RECHARGE_RADIUS = 2.4
+
+export interface RechargePoint {
+  tile: Vec2
+  label: string
+  kind: string
+}
+
+export const RECHARGE_POINTS: RechargePoint[] = []
+
 // ───────────────────────────────────────────────────────── derived geometry
 
 function key(x: number, y: number): number {
@@ -197,6 +225,21 @@ export const PATH_TILES: Set<number> = (() => {
 })()
 
 /** Only solid furniture removes a tile from play. Partitions and signage do not. */
+// Filled from PROPS so a new water cooler is automatically a recharge point.
+for (const prop of PROPS) {
+  if (RECHARGE_SPRITES.has(prop.sprite)) {
+    RECHARGE_POINTS.push({ tile: prop.tile, label: prop.label, kind: prop.sprite })
+  }
+}
+
+/** Is this position close enough to a recharge point to count? */
+export function rechargeAt(x: number, y: number): RechargePoint | null {
+  for (const point of RECHARGE_POINTS) {
+    if (Math.hypot(point.tile.x + 0.5 - x, point.tile.y + 0.5 - y) <= RECHARGE_RADIUS) return point
+  }
+  return null
+}
+
 export const PROP_TILES: Set<number> = new Set(
   PROPS.filter((p) => p.blocks).map((p) => key(p.tile.x, p.tile.y)),
 )

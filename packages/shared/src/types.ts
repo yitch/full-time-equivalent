@@ -3,10 +3,11 @@
 import type {
   Artifact,
   ArtifactSlot,
-  Stats,
   HeroState,
+  InternEntity,
   Profile,
   StakeholderEntity,
+  Stats,
 } from './types-progression.js'
 
 export type * from './types-progression.js'
@@ -86,6 +87,8 @@ export interface RequestDef {
   bounty: number
   /** Elite/named requests get a badge and bespoke behaviour hooks. */
   elite?: boolean
+  /** Chance of leaving something on the floor. Derived from hp when not given. */
+  dropChance?: number
   /** Behaviour hook keys handled in combat.ts. Keeps content data-only. */
   quirks?: RequestQuirk[]
   /** Sprite key for the renderer. */
@@ -205,6 +208,8 @@ export interface AbilityDef {
   cooldownSeconds: number
   /** Budget spent on cast. */
   budgetCost?: number
+  /** Bandwidth spent on cast. Derived from cooldown when not given. */
+  bandwidthCost?: number
   /** Seconds of channel; interrupted by moving. */
   channelSeconds?: number
   kind: AbilityKind
@@ -425,6 +430,8 @@ export interface Player {
   stillTicks: number
   /** Absorb remaining from a shield ability. */
   shield: number
+  /** Headed for a water cooler rather than a fight. Used by the balance bot. */
+  recharging: boolean
   /** Ticks of pending delayed damage, and its payload. */
   pendingNuke: { ticks: number; damage: number } | null
 }
@@ -574,6 +581,8 @@ export interface GameState {
   stakeholders: StakeholderEntity[]
   /** Artifacts lying on the floor waiting to be walked over. */
   loot: GroundLoot[]
+  /** Interns, following whoever equipped them. */
+  interns: InternEntity[]
   /** Request types that have breached this run. Feeds VIPER's grudge. */
   breachedTypes: string[]
   /** Temporary lane blockers created by DODO's filing cabinet. */
@@ -607,6 +616,7 @@ export type Intent =
   | { t: 'raise_req' }
   | { t: 'cancel_req'; id: EntityId }
   | { t: 'remove_headcount'; kind: 'attrition' | 'voluntary' | 'compulsory' }
+  | { t: 'pick_perk'; perk: string }
 
 export interface IntentEnvelope {
   playerId: PlayerId

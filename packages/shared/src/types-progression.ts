@@ -39,6 +39,12 @@ export type StatKey =
   | 'xpGain'
   /** Passive HP regained per second while not in combat. */
   | 'regen'
+  /** Maximum Bandwidth — the pool every ability spends from. */
+  | 'maxBandwidth'
+  /** Bandwidth recovered per second, anywhere on the floor. */
+  | 'focus'
+  /** How hard your intern hits, as a multiplier. */
+  | 'internPower'
 
 export type Stats = Record<StatKey, number>
 
@@ -57,6 +63,9 @@ export const STAT_KEYS: readonly StatKey[] = [
   'budgetGain',
   'xpGain',
   'regen',
+  'maxBandwidth',
+  'focus',
+  'internPower',
 ]
 
 /** Stats that read as percentages in the UI rather than flat numbers. */
@@ -68,6 +77,7 @@ export const PERCENT_STATS: ReadonlySet<StatKey> = new Set<StatKey>([
   'socialGain',
   'budgetGain',
   'xpGain',
+  'internPower',
 ])
 
 export function emptyStats(): Stats {
@@ -86,6 +96,9 @@ export function emptyStats(): Stats {
     budgetGain: 0,
     xpGain: 0,
     regen: 0,
+    maxBandwidth: 0,
+    focus: 0,
+    internPower: 0,
   }
 }
 
@@ -156,7 +169,7 @@ export const RARITY_INFO: Record<Rarity, { affixes: number; colour: string; labe
   legendary: { affixes: 5, colour: '#e0c05a', label: 'Career Defining' },
 }
 
-export type ArtifactSlot = 'badge' | 'device' | 'document' | 'beverage' | 'furniture'
+export type ArtifactSlot = 'badge' | 'device' | 'document' | 'beverage' | 'furniture' | 'intern'
 
 export const ARTIFACT_SLOTS: readonly ArtifactSlot[] = [
   'badge',
@@ -164,6 +177,7 @@ export const ARTIFACT_SLOTS: readonly ArtifactSlot[] = [
   'document',
   'beverage',
   'furniture',
+  'intern',
 ]
 
 export interface Affix {
@@ -221,6 +235,15 @@ export interface ArtifactBase {
 export interface HeroState {
   hp: number
   maxHp: number
+  /**
+   * Bandwidth. Every ability spends it; it comes back slowly on the floor and
+   * quickly at a water cooler, the canteen, or the nap area nobody admits to.
+   * "Do you have bandwidth for this" is the only honest question in the building.
+   */
+  bandwidth: number
+  maxBandwidth: number
+  /** True while standing in a recharge zone, for the renderer and the HUD. */
+  recharging: boolean
   /** Ticks until revival. 0 means active. */
   downedTicks: number
   /** Ticks since last dealt or took damage — gates out-of-combat regen. */
@@ -240,11 +263,30 @@ export interface HeroState {
   attackCooldown: number
   /** Cached, recomputed whenever talents or equipment change. */
   stats: Stats
+  /** Development options offered at the last performance review, awaiting a pick. */
+  pendingPerks: string[]
+  /** Perks already taken, by id. */
+  perks: string[]
   /** Set while the hero is in the middle of an auto-attack, for the renderer. */
   lastAttackTarget: EntityId | null
 }
 
 // ─────────────────────────────────────────────────────────────── persistence
+
+/** A follower. Replaceable, enthusiastic, and technically not your responsibility. */
+export interface InternEntity {
+  id: EntityId
+  ownerId: PlayerId
+  /** The artifact that summoned them, so we can despawn on unequip. */
+  artifactId: string
+  pos: Vec2
+  hp: number
+  maxHp: number
+  attackCooldown: number
+  /** Ticks until the placement resumes after they are knocked out. */
+  outTicks: number
+  name: string
+}
 
 export interface Profile {
   id: string

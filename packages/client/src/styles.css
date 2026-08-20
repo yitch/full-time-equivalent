@@ -594,3 +594,52 @@ button.chunky:disabled { opacity: 0.4; cursor: not-allowed; }
 .tut-skip { background: transparent !important; color: var(--paper-dim) !important; padding-left: 0 !important; }
 .tut-skip:hover { color: var(--paper) !important; text-decoration: underline; }
 .tut-wait { font-size: 8px; color: var(--highlighter); margin-top: 6px; }
+
+/* ── bandwidth, perks, review ────────────────────────────────────────────── */
+
+.lvl .bwline {
+  font-size: 9px; color: var(--tube-glow); margin-top: 4px;
+  display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+}
+.perklist { display: flex; flex-direction: column; gap: 3px; }
+.perkrow {
+  display: flex; align-items: center; gap: 6px; font-size: 9px;
+  border-left: 2px solid var(--social); padding: 2px 6px; background: var(--void);
+}
+.perkrow .pn { flex: 1; }
+.perkrow .pe { color: var(--tube-glow); font-size: 8px; }
+
+.bw { width: 96px; }
+.bw .lab {
+  font-size: 8px; color: var(--paper-dim); display: flex; align-items: center; gap: 3px;
+}
+.bw .track { height: 5px; background: var(--void); border: 1px solid var(--wall); }
+.bw .fill { height: 100%; background: var(--tube-glow); transition: width 120ms linear; }
+.bw.low .fill { background: var(--escalate); }
+.bw .hint { font-size: 7px; color: var(--tube-glow); }
+
+/* the nag: unspent points should be impossible to miss */
+.lv.pending {
+  animation: nag 1.1s ease-in-out infinite;
+}
+@keyframes nag {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(216,189,99,0.0); }
+  50% { box-shadow: 0 0 0 3px rgba(216,189,99,0.45); }
+}
+
+/* ── performance review ──────────────────────────────────────────────────── */
+
+.review-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0; }
+.review-card {
+  border: 1px solid var(--wall); background: var(--void); padding: 12px 11px;
+  text-align: left; color: var(--paper); font-family: inherit; cursor: pointer;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: border-color 120ms, transform 90ms;
+}
+.review-card:hover { border-color: var(--social); transform: translateY(-3px); }
+.review-card .rh { display: flex; align-items: center; gap: 6px; }
+.review-card .rn { font-family: 'Silkscreen', monospace; font-size: 10px; color: var(--social); }
+.review-card .rfl { font-size: 9px; color: var(--paper-dim); line-height: 1.5; flex: 1; }
+.review-card .ref {
+  font-size: 10px; color: var(--tube-glow); border-top: 1px solid var(--wall); padding-top: 6px;
+}

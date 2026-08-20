@@ -20,6 +20,7 @@ import { CharacterSheet } from './CharacterSheet.js'
 import { ContextMenu, type ContextTarget } from './ContextMenu.js'
 import { Headcount } from './Headcount.js'
 import { TechTree } from './TechTree.js'
+import { Review } from './Review.js'
 import { Tutorial, useTutorial } from './Tutorial.js'
 import { TopBar } from './TopBar.js'
 
@@ -200,6 +201,7 @@ export function App() {
   const raiseReq = () => net.send({ t: 'raise_req' })
   const cancelReq = (id: number) => net.send({ t: 'cancel_req', id })
   const removeHead = (kind: ExitKind) => net.send({ t: 'remove_headcount', kind })
+  const pickPerk = (perk: string) => net.send({ t: 'pick_perk', perk })
   const sellTower = (towerId: number) => net.send({ t: 'sell', towerId })
 
   const openContext = (target: { x: number; y: number; tile: Vec2 }) => {
@@ -235,6 +237,7 @@ export function App() {
   }
 
   const me = localPlayerId ? state.players[localPlayerId] : null
+  const reviewPending = (me?.hero.pendingPerks.length ?? 0) > 0
   const roster = Object.values(state.players).filter((p) => p.connected)
   const lastLog = state.log[state.log.length - 1] ?? ''
 
@@ -279,8 +282,14 @@ export function App() {
 
           <div className="ticker">{lastLog}</div>
 
-          {state.phase === 'briefing' && <Briefing state={state} onStart={startWave} />}
-          {state.phase === 'steering' && (
+          {/*
+            The review is a blocking decision, so it owns the screen until it is
+            answered — the wave summary and the next briefing wait their turn
+            rather than stacking on top of it.
+          */}
+          {reviewPending && <Review state={state} localPlayerId={localPlayerId} onPick={pickPerk} />}
+          {!reviewPending && state.phase === 'briefing' && <Briefing state={state} onStart={startWave} />}
+          {!reviewPending && state.phase === 'steering' && (
             <Steering state={state} onOpenTech={() => setTechOpen(true)} onNext={startWave} />
           )}
           {(state.phase === 'gameover' || state.phase === 'victory') && <EndCard state={state} />}
@@ -292,7 +301,7 @@ export function App() {
               onClose={() => setTechOpen(false)}
             />
           )}
-          {!techOpen && !sheetOpen && !hcOpen && (
+          {!techOpen && !sheetOpen && !hcOpen && !reviewPending && (
             <Tutorial
               state={state}
               localPlayerId={localPlayerId}

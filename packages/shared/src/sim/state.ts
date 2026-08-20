@@ -36,6 +36,7 @@ export function createGame(seed: number): GameState {
     maintenanceTicks: 0,
     stakeholders: [],
     loot: [],
+    interns: [],
     breachedTypes: [],
     walls: [],
     auras: [],
@@ -99,6 +100,7 @@ export function addPlayer(state: GameState, id: PlayerId, name: string): Player 
     killsByType: {},
     stillTicks: 0,
     shield: 0,
+    recharging: false,
     pendingNuke: null,
   }
   state.players[id] = player

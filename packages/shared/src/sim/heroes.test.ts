@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TICK_HZ } from '../constants.js'
-import { STAKEHOLDERS, pointAt } from '../content/index.js'
+import { REQUESTS, STAKEHOLDERS, dropChanceFor, pointAt } from '../content/index.js'
 import { createHero } from '../progression.js'
 import {
   addPlayer,
@@ -148,18 +148,26 @@ describe('stakeholders attack the machine, not the door', () => {
 })
 
 describe('loot', () => {
-  it('elites drop, trash does not', () => {
+  it('elites always drop, and ordinary work drops rarely but from wave one', () => {
     const elite = game()
     const batman = spawnRequest(elite, 'batman', 0)
     damageRequest(elite, batman, 99999, 'human', 'hippo')
-    expect(elite.loot.length).toBeGreaterThan(0)
+    expect(elite.loot.length).toBe(1)
 
+    // Trash is rare, not impossible — the old rule of "elites only" meant a
+    // player saw no equipment at all until wave six.
     const trash = game()
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 400; i++) {
       const req = spawnRequest(trash, 'leave_balance', 0)
       damageRequest(trash, req, 99999, 'automation')
     }
-    expect(trash.loot.length).toBe(0)
+    expect(trash.loot.length).toBeGreaterThan(3)
+    expect(trash.loot.length).toBeLessThan(120)
+  })
+
+  it('drop rates scale with how much work the request was', () => {
+    expect(dropChanceFor(REQUESTS.er_case!)).toBeGreaterThan(dropChanceFor(REQUESTS.leave_balance!))
+    expect(dropChanceFor(REQUESTS.batman!)).toBe(1)
   })
 
   it('walking over a drop picks it up', () => {

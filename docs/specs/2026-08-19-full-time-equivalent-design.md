@@ -2,6 +2,9 @@
 *a people operations tower defence*
 
 **Status:** approved 2026-08-19 · **Slice:** Floor 3 — Shared Services
+**Revision 6 (2026-08-20):** the progression loop made visible — day-one kit,
+drops from wave one, Bandwidth with recharge points, a guaranteed level and a
+Performance Review every wave, and an intern who follows you around.
 **Revision 5 (2026-08-20):** legibility pass — pixel icons on every resource and
 defence, a skippable self-guided tutorial, and every lock in the game made to
 explain itself.
@@ -231,6 +234,35 @@ the same three things, which is what makes fourteen trees learnable:
 - **GROW OUT** — mitigate it. You become a functional adult. Less spectacular.
 - **WEAPONISE** — point the dysfunction at the organisation instead of the work.
 
+### Bandwidth
+
+Every ability is a meeting, a call, or a difficult conversation, and every one of
+them spends **Bandwidth** from a pool of 100. It returns at 2.2/second anywhere
+on the floor and **seven times faster** at a water cooler, the canteen, the
+vending machine, the breakout sofa or the wellness room — all of which are real
+props already on the map, ringed on the carpet so they can be found from across
+the floor.
+
+Running dry mid-wave and having to walk to the kitchen is the intended
+experience. `abilityCost` derives from cooldown so all fifty-six abilities are
+priced consistently, with a per-ability override available in content.
+
+### A level every wave, and the Performance Review
+
+**Every wave ends in a guaranteed level.** If the wave's kills did not earn one,
+the bar is topped up. This exists because it had to: a player reached wave five
+having levelled four times without ever noticing, because kill XP alone is
+invisible and the only way to spend it was a key they never pressed.
+
+The level is then delivered as a **Performance Review** — a blocking modal
+offering three development opportunities drawn at random from sixteen, of which
+you take one. Every perk is something an organisation would genuinely give you
+instead of money: a Wellbeing App Subscription, Exposure To Senior Leadership,
+Personal Protective Equipment (for an office), Intern Supervision Duty.
+
+The modal also nags about unspent talent points, because they were the other half
+of the same invisibility problem.
+
 ### Artifacts
 Five slots — badge, device, document, beverage, furniture. Five rarities, named
 in performance-review language: Standard Issue → Approved → Business Critical →
@@ -241,7 +273,25 @@ Five legendaries, each bending exactly one rule: *The Shadow Spreadsheet*,
 *The Escalation Inbox*, *Pre-Approved Business Case*, *Garden Leave Letter*,
 *The Chairman's Ear*.
 
-Elites and Stakeholders drop; trash does not, or the floor becomes unreadable.
+**Everything drops.** Elites and Stakeholders always do; ordinary work drops at
+`0.035 + hp/1400`, capped at 12%. The previous rule — elites only — meant no
+equipment existed before wave six, and a player reasonably concluded the game had
+none. Rates are low enough that the floor stays readable and high enough that
+wave one gives you something to pick up.
+
+**Day-one issue.** Every hero starts with a Company Laptop (4 years old) and a
+Lanyard (already expired), so two slots are filled from the first minute and the
+equipment system announces itself instead of waiting for an elite.
+
+### The intern
+
+A sixth equipment slot. Interns drop like anything else — Summer Intern,
+Placement Student, Graduate Trainee, Apprentice — and equipping one puts a
+follower on the floor who trails you, attacks what you attack, and can be knocked
+over, at which point the placement is briefly suspended and then resumes. Kills
+are credited to the owner so passives, XP and specialist multipliers all apply.
+
+Supervising them is, per your objectives, a development opportunity for you both.
 
 ## 6c. Stakeholders — the enemy mirror
 

@@ -15,7 +15,7 @@ Read this file before your first edit. It is short on purpose.
 
 ```bash
 npm install
-npm test          # 110 tests. If these pass, the game works.
+npm test          # 126 tests. If these pass, the game works.
 npm run balance   # plays a full campaign headless and prints a per-wave table
 ```
 
@@ -63,7 +63,11 @@ someone actually emailed you.
 | Add speech bubbles / ticker lines | `packages/shared/src/content/barks.ts` | No |
 | Change the palette or add a level wing | `packages/shared/src/content/palette.ts` | No |
 | Add office furniture | `packages/client/src/render/office.ts` + `content/map.ts` | No |
-| Reword the tutorial | `packages/shared/src/content/tutorial.ts` | No |
+| Reword the tutorial / onboarding | `packages/shared/src/content/tutorial.ts` | No |
+| Add a Performance Review perk | `packages/shared/src/content/perks.ts` | No |
+| Add an intern or starter-kit item | `packages/shared/src/content/artifacts.ts` | No |
+| Move or add a recharge point | `packages/shared/src/content/map.ts` (`RECHARGE_SPRITES`) | No |
+| Change Bandwidth costs | `packages/shared/src/sim/heroes.ts` (`abilityCost`) | Yes |
 | Change what a defence says it contributes | `content/towers.ts` (`contributes`) | No |
 | Change unlock levels for animals | `packages/shared/src/content/unlocks.ts` | No |
 | Add a HUD icon | `packages/client/src/ui/Icon.tsx` | No |
@@ -125,6 +129,23 @@ opposite, so three rules are enforced by tests:
 
 Icons are 9×9 pixel maps in `ui/Icon.tsx`, same discipline as the sprites: the
 art is a text block, so it diffs cleanly.
+
+## 3e. Progression has to be visible
+
+A player reached wave five having levelled four times without noticing, and
+having seen no equipment at all, because loot only came from elites that do not
+appear until wave six. Both were fixed by making the loop loud rather than by
+making it bigger. Keep it that way:
+
+- **Every wave ends in a guaranteed level and a blocking Performance Review.** A
+  level that can be missed will be missed.
+- **Everything drops**, at a low rate, from wave one. Elites still always drop.
+- **Heroes start with kit in two slots** so the equipment system announces itself.
+- Unspent talent points nag in the HUD and on the review card.
+
+`npm run balance` prints the tower/player damage split, but it will not tell you
+whether a system is *findable*. When you add one, play to wave three and check you
+would have noticed it without knowing it was there.
 
 ## 4. Hard constraints
 

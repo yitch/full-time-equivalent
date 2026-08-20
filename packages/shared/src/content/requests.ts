@@ -228,6 +228,19 @@ export const REQUESTS: Record<RequestTypeId, RequestDef> = {
   },
 }
 
+/**
+ * How often a request leaves something behind.
+ *
+ * Elites always drop. Everything else drops rarely but *from wave one* — the
+ * previous rule of "elites only" meant a player saw no loot at all until wave
+ * six and reasonably concluded the game had no equipment in it.
+ */
+export function dropChanceFor(def: RequestDef): number {
+  if (def.dropChance !== undefined) return def.dropChance
+  if (def.elite) return 1
+  return Math.min(0.12, 0.035 + def.hp / 1400)
+}
+
 export const REQUEST_IDS = Object.keys(REQUESTS)
 
 export function getRequest(id: RequestTypeId): RequestDef {

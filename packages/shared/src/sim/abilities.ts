@@ -3,7 +3,7 @@ import { HEADCOUNT_COST, ROLE_BARKS, getRequest, getRole, isBuildable, pointAt }
 import { createRng, next, pick } from '../rng.js'
 import type { AbilityDef, GameState, Player, RequestEntity, Vec2 } from '../types.js'
 import { damageRequest, spawnRequest } from './combat.js'
-import { cooldownScale, isSlippedByOptimism, strike } from './heroes.js'
+import { abilityCost, cooldownScale, isSlippedByOptimism, strike } from './heroes.js'
 import { headcountFree } from './headcount.js'
 import { pushLog } from './state.js'
 
@@ -61,7 +61,13 @@ export function castAbility(state: GameState, player: Player, key: 'Q' | 'W' | '
   if (slot.channelling > 0) return `${def.name} is already running.`
   if (def.budgetCost && state.budget < def.budgetCost) return `Not enough Budget (need ${def.budgetCost}).`
 
+  const cost = abilityCost(def)
+  if (player.hero.bandwidth < cost) {
+    return `No bandwidth for that (needs ${cost}). Get a coffee, a glass of water, or twenty minutes in the wellness room.`
+  }
+
   if (def.budgetCost) state.budget -= def.budgetCost
+  player.hero.bandwidth = Math.max(0, player.hero.bandwidth - cost)
   slot.cooldown = Math.max(1, Math.round(def.cooldownSeconds * TICK_HZ * cooldownScale(player)))
 
   // GOOSE: the estimate was optimistic and the ability simply did not happen.

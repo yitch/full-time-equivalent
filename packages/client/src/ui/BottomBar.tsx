@@ -198,6 +198,21 @@ export function BottomBar({
               LVL {me.hero.level}
               {me.hero.talentPoints > 0 ? ` · ${me.hero.talentPoints} pt` : ''}
             </button>
+            <div className={`bw${me.hero.bandwidth / Math.max(1, me.hero.maxBandwidth) < 0.25 ? ' low' : ''}`}>
+              <div className="lab">
+                <Icon name="automation" size={8} colour="var(--tube-glow)" />
+                BANDWIDTH {Math.round(me.hero.bandwidth)}
+              </div>
+              <div className="track">
+                <div
+                  className="fill"
+                  style={{
+                    width: `${Math.max(0, (me.hero.bandwidth / Math.max(1, me.hero.maxBandwidth)) * 100)}%`,
+                  }}
+                />
+              </div>
+              <div className="hint">{me.hero.recharging ? 'recharging…' : ''}</div>
+            </div>
             <div className="hp">
               <div style={{ fontSize: 8, color: 'var(--paper-dim)' }}>
                 {Math.round(me.hero.hp)}/{Math.round(me.hero.maxHp)}

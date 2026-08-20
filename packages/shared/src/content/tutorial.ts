@@ -1,5 +1,8 @@
 /**
- * The self-guided tutorial.
+ * Induction.
+ *
+ * The self-guided tutorial, framed as onboarding, because that is what it is and
+ * because the framing does half the comedy for free.
  *
  * Data, not code, so the copy can be rewritten without touching React. Steps are
  * short on purpose: the player is looking at the board, not at us. Anything that
@@ -38,25 +41,33 @@ export interface TutorialStep {
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
   {
-    id: 'premise',
-    title: 'You do not place people. You place processes.',
-    body: 'Inbound requests walk the corridors towards a door marked CHRO. Anything that reaches it costs you Morale. Your defences are the systems and processes you put in their way.',
-    aside: 'You are also on the floor yourself, and you can be hurt. More on that shortly.',
+    id: 'day_one',
+    title: 'Day One — Induction',
+    body: 'Welcome to the People function. Your induction has been condensed into eleven screens because the full version is four hours and nobody has four hours. You have been issued a laptop and a lanyard. The lanyard has already expired.',
+    aside: 'Everything here is skippable. Nothing here is optional.',
+    icon: 'headcount',
+    anchor: 'centre',
+  },
+  {
+    id: 'the_job',
+    title: 'What the job is',
+    body: 'Inbound requests walk the corridors towards a door marked CHRO. Anything that reaches it costs you Morale. You do not place people to stop them — you place processes.',
+    aside: 'You are also on the floor yourself. That turns out to matter.',
     icon: 'morale',
     anchor: 'centre',
   },
   {
     id: 'scoreboard',
-    title: 'Five numbers, two of which can end the run',
-    body: 'MORALE is your team and drops when work reaches the CHRO. COMPLIANCE is a separate way to lose — only Employee Relations cases drain it, and no tower can see them. BUDGET builds things. SOCIAL CAPITAL buys the tech tree. SLA is how much you resolve rather than breach.',
-    aside: 'Hover any of them at the top of the screen for the full explanation.',
+    title: 'Your objectives for the period',
+    body: 'MORALE is your team, drained by work reaching the CHRO. COMPLIANCE is a second, quieter way to lose — only Employee Relations cases touch it, and no tower can see them. BUDGET builds. SOCIAL CAPITAL is credibility, and buys everything that matters. SLA is how much you resolve rather than breach.',
+    aside: 'Hover any of them at the top for the full version.',
     icon: 'compliance',
     anchor: 'topbar',
   },
   {
     id: 'build',
-    title: 'Put something in their way',
-    body: 'Pick a process from the bar at the bottom and click a floor tile to place it. The small icons on each card tell you what it contributes: deflecting, resolving, buying time, or stopping work happening at all.',
+    title: 'Your first system',
+    body: 'Pick a process from the bar and click a floor tile. The icons on each card say what it contributes — deflecting, resolving, buying time, or stopping work happening at all.',
     aside: 'Start with the Intranet Page Nobody Reads. It does two damage. It is, technically, a defence.',
     icon: 'deflect',
     anchor: 'buildbar',
@@ -65,15 +76,15 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'headcount',
     title: 'Every process needs an owner',
-    body: 'Towers do not use abstract slots — they use people. An automated process needs 1 FTE to own; a manual one needs 2. That is the entire argument for automation, and it is on the build card rather than in a deck.',
+    body: 'Towers do not use abstract slots, they use people. An automated process needs 1 FTE to own; a manual one needs 2. That is the whole argument for automation, and it is on the build card rather than in a deck.',
     aside: 'Press H for the establishment: approvals, salary, and the three ways to let someone go.',
     icon: 'headcount',
     anchor: 'buildbar',
   },
   {
     id: 'start',
-    title: 'Open the doors',
-    body: 'Press BEGIN. Requests spawn from the left and walk their lane. Watch which of your processes actually fire, and which sit there doing nothing because the thing walking past is immune to them.',
+    title: 'The doors open at nine',
+    body: 'Press BEGIN. Watch which of your processes actually fire, and which sit there doing nothing because the thing walking past is immune to them.',
     icon: 'wave',
     anchor: 'side',
     doneWhen: 'wave_started',
@@ -81,27 +92,51 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'hero',
     title: 'You are on the floor too',
-    body: 'WASD to move. Q, F, E and R for your abilities. You auto-attack whatever is in reach — and anything you stand next to hurts you back. Standing in the queue is doing the work, and it costs you.',
-    aside: 'Go down and a colleague standing over you revives you four times faster than waiting it out.',
+    body: 'WASD to move. Q, F, E and R for your abilities. You auto-attack whatever is in reach, and anything you stand next to hurts you back. Standing in the queue is doing the work, and it costs you.',
+    aside: 'Go down and a colleague standing over you gets you back four times faster than waiting.',
     icon: 'human',
     anchor: 'board',
     doneWhen: 'moved',
   },
   {
-    id: 'sla',
-    title: 'Ignore something and it gets worse',
-    body: 'Every request carries an SLA clock. When it runs out the request does not vanish — it ESCALATES: faster, angrier, and worth double damage at the door. Your failures come back as a stronger enemy.',
-    aside: 'That is also why Social Capital is only paid for in-SLA resolutions. Surviving is not the same as doing well.',
-    icon: 'sla',
+    id: 'bandwidth',
+    title: 'Do you have bandwidth for this?',
+    body: 'Every ability is a meeting, a call, or a difficult conversation, and every one of them spends BANDWIDTH. It comes back slowly anywhere on the floor and quickly at the water cooler, the canteen, or the room that is officially for wellness. Those spots are ringed on the carpet.',
+    aside: 'Running dry mid-wave and having to walk to the kitchen is the intended experience.',
+    icon: 'automation',
     anchor: 'board',
   },
   {
-    id: 'social',
-    title: 'Credibility, not money, buys the good things',
-    body: 'Social Capital comes from resolving things WELL — inside SLA, at first contact, deflected at Tier 0 before they became a ticket. It is never paid for volume. It buys the tech tree and it buys headcount.',
-    aside: 'Brute-force the early waves and you will arrive at Open Enrollment with nothing to spend.',
+    id: 'drops',
+    title: 'Things get left on the floor',
+    body: 'Requests drop equipment as they are resolved. Walk over it to pick it up — badges, laptops, documents, mugs, furniture. Press C to equip what you find and to spend the talent points you have been accumulating.',
+    aside: 'The good biscuits are a real item and they are a real upgrade.',
+    icon: 'expense',
+    anchor: 'board',
+  },
+  {
+    id: 'review',
+    title: 'Performance review, every wave',
+    body: 'At the end of each wave you are guaranteed a level and offered three development opportunities. Pick one. They are all things an organisation would genuinely give you instead of money.',
+    aside: 'You also get a talent point every level. They do nothing sitting unspent.',
     icon: 'social',
-    anchor: 'topbar',
+    anchor: 'centre',
+  },
+  {
+    id: 'intern',
+    title: 'You have been assigned an intern',
+    body: 'Interns drop like any other equipment and go in their own slot. They follow you around, help at roughly the level you would expect, and can be knocked over — at which point the placement is briefly suspended and then resumes.',
+    aside: 'Supervising them is described in your objectives as a development opportunity for you both.',
+    icon: 'headcount',
+    anchor: 'board',
+  },
+  {
+    id: 'sla',
+    title: 'Ignore something and it gets worse',
+    body: 'Every request carries an SLA clock. When it runs out the request does not vanish — it ESCALATES: faster, angrier, double damage at the door. Your failures come back as a stronger enemy.',
+    aside: 'This is why Social Capital is only paid for in-SLA work. Surviving is not the same as doing well.',
+    icon: 'sla',
+    anchor: 'board',
   },
   {
     id: 'research',
@@ -116,26 +151,18 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     id: 'stakeholders',
     title: 'Some things do not race you to the door',
     body: 'From wave five, Stakeholders arrive — the same corporate animals, as enemies. They walk to your TOWERS and interfere: overruling them, sitting on them, or in one case removing one permanently. You cannot out-build a Stakeholder. Someone has to walk over and deal with it.',
-    aside: 'That is what the hero layer is for.',
+    aside: 'That is what you are for.',
     icon: 'prevent',
     anchor: 'board',
   },
   {
-    id: 'rightclick',
-    title: 'Right-click for the difficult conversations',
-    body: 'Right-click anywhere on the floor for the headcount menu, or right-click a process to decommission it and free the person running it. Both are on the same menu because they are the same decision from two directions.',
-    aside: 'Compulsory redundancy is the cheapest option in Budget and the most expensive in everything else.',
-    icon: 'headcount',
-    anchor: 'board',
-  },
-  {
     id: 'done',
-    title: 'That is the job',
+    title: 'Probation complete',
     body: 'Nine waves, ending with Open Enrollment at five to ten times normal volume. Automate what you can, keep the SLA up so the CFO signs your requisitions, and do not ignore the quiet cases nobody has filed anything about yet.',
-    aside: 'Press ? at any time to run through this again.',
+    aside: 'Press ? at any time to run through your induction again.',
     icon: 'tick',
     anchor: 'centre',
   },
 ]
 
-export const TUTORIAL_VERSION = 1
+export const TUTORIAL_VERSION = 2

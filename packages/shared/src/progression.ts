@@ -12,7 +12,16 @@
  * chair stack without a special case anywhere.
  */
 
-import { ARTIFACT_BASES, AFFIX_POOLS, LEGENDARIES, NAME_PREFIX, NAME_SUFFIX, rarityWeights } from './content/artifacts.js'
+import {
+  AFFIX_POOLS,
+  ARTIFACT_BASES,
+  LEGENDARIES,
+  NAME_PREFIX,
+  NAME_SUFFIX,
+  STARTER_KIT,
+  rarityWeights,
+} from './content/artifacts.js'
+import { PERKS, PERK_BY_ID, REVIEW_OPTIONS } from './content/perks.js'
 import { TALENT_TREES } from './content/talents.js'
 import { getRole } from './content/roles.js'
 import { chance, next, nextFloat, nextInt, pick, type Rng } from './rng.js'
@@ -28,6 +37,13 @@ import type {
 import { ARTIFACT_SLOTS, addStats, emptyStats } from './types-progression.js'
 
 export const MAX_HERO_LEVEL = 30
+
+/** Bandwidth every hero starts with, before gear and perks. */
+export const BASE_BANDWIDTH = 100
+/** Bandwidth recovered per second anywhere on the floor. Slow on purpose. */
+export const BASE_FOCUS = 2.2
+/** Multiplier while standing at a water cooler, the canteen or the nap area. */
+export const RECHARGE_MULTIPLIER = 7
 
 /**
  * Deliberately shallow early and steep late: you should hit level 5 during wave
@@ -59,6 +75,7 @@ export function computeStats(
   level: number,
   talents: Record<string, number>,
   equipment: Record<ArtifactSlot, Artifact | null>,
+  perks: string[] = [],
 ): Stats {
   const def = getRole(role)
   const stats = emptyStats()
@@ -83,23 +100,56 @@ export function computeStats(
     }
   }
 
+  for (const perkId of perks) {
+    const perk = PERK_BY_ID[perkId]
+    if (perk) addStats(stats, perk.stats)
+  }
+
   // Cooldown reduction has to be capped or the late game becomes ability soup.
   stats.cooldown = Math.min(0.6, stats.cooldown)
   stats.maxHp = Math.max(1, stats.maxHp)
   stats.attackSpeed = Math.max(0.15, stats.attackSpeed)
+  stats.maxBandwidth = Math.max(20, BASE_BANDWIDTH + stats.maxBandwidth)
+  stats.focus = Math.max(0.5, BASE_FOCUS + stats.focus)
   return stats
 }
 
 export function emptyEquipment(): Record<ArtifactSlot, Artifact | null> {
-  return { badge: null, device: null, document: null, beverage: null, furniture: null }
+  return { badge: null, device: null, document: null, beverage: null, furniture: null, intern: null }
+}
+
+/**
+ * Day-one issue. Two slots filled from the first minute so the equipment system
+ * announces itself, rather than sitting invisible until an elite finally drops
+ * something around wave six.
+ */
+export function starterKit(): Artifact[] {
+  return STARTER_KIT.map((entry, i) => {
+    const base = ARTIFACT_BASES.find((b) => b.id === entry.base)
+    return {
+      id: `starter_${entry.base}_${i}`,
+      base: entry.base,
+      name: entry.name,
+      slot: base?.slot ?? 'device',
+      rarity: 'common' as Rarity,
+      ilvl: 1,
+      affixes: entry.affixes.map((a) => ({ ...a })),
+    }
+  })
 }
 
 export function createHero(role: RoleId, startLevel = 1): HeroState {
   const equipment = emptyEquipment()
-  const stats = computeStats(role, startLevel, {}, equipment)
+  for (const item of starterKit()) equipment[item.slot] = item
+  const stats = computeStats(role, startLevel, {}, equipment, [])
   return {
     hp: stats.maxHp,
     maxHp: stats.maxHp,
+    bandwidth: stats.maxBandwidth,
+    maxBandwidth: stats.maxBandwidth,
+    recharging: false,
+    pendingPerks: [],
+    perks: [],
     downedTicks: 0,
     outOfCombat: 0,
     level: startLevel,
@@ -118,9 +168,12 @@ export function createHero(role: RoleId, startLevel = 1): HeroState {
 /** Recomputes derived stats, preserving the current HP fraction. */
 export function refreshHero(hero: HeroState, role: RoleId): void {
   const fraction = hero.maxHp > 0 ? hero.hp / hero.maxHp : 1
-  hero.stats = computeStats(role, hero.level, hero.talents, hero.equipment)
+  const bandFraction = hero.maxBandwidth > 0 ? hero.bandwidth / hero.maxBandwidth : 1
+  hero.stats = computeStats(role, hero.level, hero.talents, hero.equipment, hero.perks)
   hero.maxHp = hero.stats.maxHp
   hero.hp = Math.min(hero.maxHp, Math.max(1, Math.round(hero.maxHp * fraction)))
+  hero.maxBandwidth = hero.stats.maxBandwidth
+  hero.bandwidth = Math.min(hero.maxBandwidth, hero.maxBandwidth * bandFraction)
 }
 
 /** Returns the number of levels gained, so the caller can raise events. */
@@ -138,8 +191,10 @@ export function grantXp(hero: HeroState, role: RoleId, amount: number): number {
   }
   if (gained > 0) {
     const fraction = hero.hp / Math.max(1, hero.maxHp)
-    hero.stats = computeStats(role, hero.level, hero.talents, hero.equipment)
+    hero.stats = computeStats(role, hero.level, hero.talents, hero.equipment, hero.perks)
     hero.maxHp = hero.stats.maxHp
+    hero.maxBandwidth = hero.stats.maxBandwidth
+    hero.bandwidth = hero.maxBandwidth
     // Levelling heals proportionally — a level-up should feel like relief.
     hero.hp = Math.min(hero.maxHp, Math.round(hero.maxHp * Math.min(1, fraction + 0.35)))
   }
@@ -292,6 +347,24 @@ function rollAffixes(
     affixes.push({ stat: entry.stat, value: scaleAffix(rng, entry.min, entry.max, ilvl) })
   }
   return affixes
+}
+
+/**
+ * Draws the options for a performance review: three development opportunities
+ * you have not already been given, or fewer if you have taken nearly all of them.
+ */
+export function rollPerks(rng: Rng, taken: string[], count = REVIEW_OPTIONS): string[] {
+  const pool = PERKS.filter((p) => !taken.includes(p.id))
+  const chosen: string[] = []
+  const used = new Set<string>()
+  let guard = 0
+  while (chosen.length < Math.min(count, pool.length) && guard++ < 200) {
+    const perk = pick(rng, pool)
+    if (used.has(perk.id)) continue
+    used.add(perk.id)
+    chosen.push(perk.id)
+  }
+  return chosen
 }
 
 /** A rough single number for comparing two items in the UI. */

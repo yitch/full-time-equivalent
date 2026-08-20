@@ -9,6 +9,7 @@ import {
 } from '../constants.js'
 import {
   CFO_APPROVALS,
+  PERK_BY_ID,
   SELL_REFUND,
   TICKER_LINES,
   WAVES,
@@ -42,6 +43,7 @@ import {
   tickMetrics,
 } from './heroes.js'
 import { overrideFactor, spawnStakeholder, stepStakeholders } from './stakeholders.js'
+import { damageIntern, stepInterns, syncInterns } from './interns.js'
 import {
   advanceRequisitions,
   cancelRequisition,
@@ -52,7 +54,7 @@ import {
   removeHeadcount,
   stepExits,
 } from './headcount.js'
-import { refreshHero, rollArtifact, spendTalent } from '../progression.js'
+import { MAX_HERO_LEVEL, grantXp, refreshHero, rollArtifact, rollPerks, spendTalent } from '../progression.js'
 import { ESCALATED_DAMAGE, ESCALATED_SPEED, damageRequest, escalate, pickTarget, spawnRequest } from './combat.js'
 import { addPlayer, pushLog, recomputeOwnership, removePlayer, setRole } from './state.js'
 
@@ -62,6 +64,7 @@ export * from './abilities.js'
 export * from './heroes.js'
 export * from './stakeholders.js'
 export * from './headcount.js'
+export * from './interns.js'
 
 // ─────────────────────────────────────────────────────────────── tower stats
 
@@ -160,6 +163,8 @@ export function step(state: GameState): GameState {
   }
 
   stepPlayers(state)
+  syncInterns(state)
+  stepInterns(state)
   decayAuras(state)
   stepExits(state)
   enforceHeadcount(state)
@@ -524,6 +529,7 @@ function endWave(state: GameState): void {
 
   state.events.push({ kind: 'wave_end', at: { x: 20, y: 12 }, text: wave.name })
   pushLog(state, `Wave clear: ${wave.name}. +${wave.budgetReward} Budget.`)
+  runPerformanceReviews(state)
 
   const rng = createRng(state.rngState)
   pushLog(state, pick(rng, TICKER_LINES))
@@ -565,6 +571,16 @@ function requestsFightBack(state: GameState, player: Player): void {
     damage += 9
   }
   if (damage > 0) damageHero(state, player, damage)
+
+  const intern = state.interns.find((i) => i.ownerId === player.id && i.outTicks === 0)
+  if (!intern) return
+  let internDamage = 0
+  for (const req of state.requests) {
+    if (req.hp <= 0) continue
+    if (Math.hypot(req.pos.x - intern.pos.x, req.pos.y - intern.pos.y) > 1.1) continue
+    internDamage += getRequest(req.type).moraleDamage * (req.escalated ? 2.4 : 1)
+  }
+  if (internDamage > 0) damageIntern(state, intern, internDamage)
 }
 
 /** Drops decay so the floor does not silt up over a long run. */
@@ -603,6 +619,58 @@ function unequipArtifact(state: GameState, playerId: PlayerId, slot: ArtifactSlo
   return null
 }
 
+/**
+ * The Performance Review, held at the end of every wave.
+ *
+ * You are guaranteed a level — topped up if the wave did not earn one — and
+ * offered three development opportunities of which you may select one. A
+ * guaranteed level per wave is the whole reason the progression is visible at
+ * all: relying on kill XP alone meant a player could reach wave five having
+ * levelled without ever noticing it happened.
+ */
+function runPerformanceReviews(state: GameState): void {
+  for (const player of Object.values(state.players)) {
+    if (!player.connected || !player.role) continue
+    const hero = player.hero
+
+    if (hero.level < MAX_HERO_LEVEL) {
+      // Top the bar up so the wave always ends in a level.
+      const shortfall = Math.max(0, hero.xpToNext - hero.xp)
+      if (shortfall > 0) grantXp(hero, player.role, shortfall / Math.max(0.01, 1 + hero.stats.xpGain))
+      state.events.push({
+        kind: 'levelup',
+        at: { ...player.pos },
+        playerId: player.id,
+        amount: hero.level,
+        text: `LEVEL ${hero.level}`,
+      })
+    }
+
+    const rng = createRng(state.rngState + hero.level)
+    hero.pendingPerks = rollPerks(rng, hero.perks)
+    state.rngState = rng.state
+    if (hero.pendingPerks.length > 0) {
+      pushLog(state, `${player.name}: performance review. Three development opportunities, pick one.`)
+    }
+  }
+}
+
+function pickPerk(state: GameState, playerId: PlayerId, perkId: string): string | null {
+  const player = state.players[playerId]
+  if (!player?.role) return 'Not in this room.'
+  const hero = player.hero
+  if (!hero.pendingPerks.includes(perkId)) return 'That was not one of the options.'
+  const perk = PERK_BY_ID[perkId]
+  if (!perk) return 'No such development opportunity.'
+
+  hero.perks.push(perkId)
+  hero.pendingPerks = []
+  refreshHero(hero, player.role)
+  pushLog(state, `${player.name} accepted ${perk.name}. ${perk.effect}.`)
+  state.events.push({ kind: 'levelup', at: { ...player.pos }, playerId, text: perk.name })
+  return null
+}
+
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v
 }
@@ -615,6 +683,9 @@ export function applyIntent(state: GameState, playerId: PlayerId, intent: Intent
   switch (intent.t) {
     case 'join':
       return addPlayer(state, playerId, intent.name) ? null : 'Room is full.'
+
+    case 'pick_perk':
+      return pickPerk(state, playerId, intent.perk)
 
     case 'pick_role':
       if (!player) return 'Not in this room.'

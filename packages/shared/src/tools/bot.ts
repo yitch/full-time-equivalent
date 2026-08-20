@@ -9,6 +9,7 @@
  */
 import {
   LANES,
+  RECHARGE_POINTS,
   REQUESTS,
   ROLES,
   TALENT_TREES,
@@ -210,11 +211,43 @@ function botSpend(state: GameState, tiles: Vec2[]): void {
  * off cooldown. Crude, but it exercises contact damage and abilities, which is
  * most of a real player's output in the early waves.
  */
+/** Closest place to get your Bandwidth back. */
+function nearestRecharge(pos: { x: number; y: number }) {
+  let best = null as (typeof RECHARGE_POINTS)[number] | null
+  let bestD = Infinity
+  for (const point of RECHARGE_POINTS) {
+    const d = Math.hypot(point.tile.x + 0.5 - pos.x, point.tile.y + 0.5 - pos.y)
+    if (d < bestD) {
+      bestD = d
+      best = point
+    }
+  }
+  return best
+}
+
 function botFight(state: GameState): void {
   if (state.tick % 6 !== 0) return
 
   for (const player of Object.values(state.players)) {
     if (player.hero.downedTicks > 0) continue
+
+    // Out of bandwidth: go and get a coffee. Standing in the fight with nothing
+    // to spend is worse than spending twenty seconds at the water cooler.
+    const hero = player.hero
+    const depleted = hero.bandwidth < hero.maxBandwidth * 0.15
+    const topped = hero.bandwidth > hero.maxBandwidth * 0.85
+    if (depleted) player.recharging = true
+    if (topped) player.recharging = false
+    if (player.recharging) {
+      const point = nearestRecharge(player.pos)
+      if (point) {
+        const dx = point.tile.x + 0.5 - player.pos.x
+        const dy = point.tile.y + 0.5 - player.pos.y
+        const len = Math.hypot(dx, dy) || 1
+        applyIntent(state, player.id, { t: 'move', x: dx / len, y: dy / len })
+        continue
+      }
+    }
 
     // Priority order, which is also the advice you would give a new player:
     //   1. Stakeholders — they degrade the machine and only a person can stop them
@@ -323,6 +356,10 @@ export function playRun(seed: number, roles: RoleId[] = ROLES_IN_LOBBY, options:
     const phase: string = state.phase
     if (phase === 'gameover' || phase === 'victory') break
     if (phase === 'briefing' || phase === 'steering') {
+      for (const player of Object.values(state.players)) {
+        if (player.hero.pendingPerks.length === 0) continue
+        applyIntent(state, player.id, { t: 'pick_perk', perk: player.hero.pendingPerks[0]! })
+      }
       if (!passive) botSpend(state, tiles)
       applyIntent(state, 'bot', { t: 'start_wave' })
     }

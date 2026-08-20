@@ -1,5 +1,13 @@
 import { TICK_HZ } from '../constants.js'
-import { ESCALATION_BARKS, SPAWN_BARKS, getRequest, getTower, laneLength, pointAt } from '../content/index.js'
+import {
+  ESCALATION_BARKS,
+  SPAWN_BARKS,
+  dropChanceFor,
+  getRequest,
+  getTower,
+  laneLength,
+  pointAt,
+} from '../content/index.js'
 import { grantXp, rollArtifact } from '../progression.js'
 import { chance, createRng, next, pick } from '../rng.js'
 import type {
@@ -183,8 +191,12 @@ export function resolveRequest(state: GameState, req: RequestEntity, channel: Ch
   const def = getRequest(req.type)
   req.hp = 0
 
-  // Elites drop. Trash does not, or the floor becomes unreadable.
-  if (def.elite) {
+  // Everything can drop; elites always do. Rates are low enough that the floor
+  // stays readable and high enough that wave one gives you something to equip.
+  const { rng: dropRng, commit: dropCommit } = rngFor(state)
+  const drops = chance(dropRng, dropChanceFor(def))
+  dropCommit()
+  if (drops) {
     const { rng, commit } = rngFor(state)
     const artifact = rollArtifact(rng, state.waveIndex + 1, 0)
     commit()

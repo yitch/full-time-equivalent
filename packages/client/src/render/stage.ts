@@ -9,6 +9,8 @@ import {
   PALETTE,
   PROPS,
   RARITY_INFO,
+  RECHARGE_POINTS,
+  RECHARGE_RADIUS,
   themeFor,
   ROLES,
   STAKEHOLDERS,
@@ -66,6 +68,7 @@ export class GameStage {
     requests: new Container(),
     loot: new Container(),
     stakeholders: new Container(),
+    interns: new Container(),
     players: new Container(),
     fx: new Container(),
     overlay: new Container(),
@@ -74,6 +77,7 @@ export class GameStage {
   private requestSprites = new Map<number, Container>()
   private stakeholderSprites = new Map<number, Container>()
   private lootSprites = new Map<number, Container>()
+  private internSprites = new Map<number, Container>()
   private towerSprites = new Map<number, Container>()
   private playerSprites = new Map<string, Container>()
   private interp = new Map<number, Interp>()
@@ -108,6 +112,7 @@ export class GameStage {
       this.layers.requests,
       this.layers.loot,
       this.layers.stakeholders,
+      this.layers.interns,
       this.layers.players,
       this.layers.fx,
       this.layers.overlay,
@@ -189,6 +194,20 @@ export class GameStage {
     glow.rect(0, 0, BOARD_W, BOARD_H)
     glow.fill({ color: currentPalette().tubeGlow, alpha: 0.045 })
     this.layers.floor.addChild(glow)
+
+    // Recharge zones: the water cooler, the canteen and the wellness room get a
+    // marked footprint, because "go somewhere to get your Bandwidth back" only
+    // works if the somewhere is visible from across the floor.
+    const zones = new Graphics()
+    for (const point of RECHARGE_POINTS) {
+      const cx = (point.tile.x + 0.5) * TILE
+      const cy = (point.tile.y + 0.5) * TILE
+      zones.circle(cx, cy, RECHARGE_RADIUS * TILE)
+      zones.fill({ color: currentPalette().tubeGlow, alpha: 0.07 })
+      zones.circle(cx, cy, RECHARGE_RADIUS * TILE)
+      zones.stroke({ width: 1, color: currentPalette().tubeGlow, alpha: 0.28 })
+    }
+    this.layers.floor.addChild(zones)
 
     // The wing you are standing in, stencilled on the floor like a fire exit.
     const { theme } = themeFor(this.levelIndex)
@@ -275,6 +294,7 @@ export class GameStage {
     this.syncStakeholders(state)
     this.syncLoot(state)
     this.syncTowers(state)
+    this.syncInterns(state)
     this.syncPlayers(state, input)
     this.syncGhost(state, input)
     this.drainEvents(state)
@@ -479,8 +499,12 @@ export class GameStage {
         if (channelling) {
           ring.circle(7, 17, 11).stroke({ width: 1, color: PALETTE.social })
         }
-        if (player.hero.talentPoints > 0) {
+        if (player.hero.talentPoints > 0 || player.hero.pendingPerks.length > 0) {
           ring.rect(12, -10, 4, 4).fill({ color: PALETTE.social })
+        }
+        if (player.hero.recharging) {
+          const pulse = 9 + Math.sin(state.tick * 0.25) * 2
+          ring.circle(7, 17, pulse).stroke({ width: 1, color: PALETTE.tubeGlow, alpha: 0.8 })
         }
       }
     }
@@ -582,6 +606,48 @@ export class GameStage {
       if (seen.has(id)) continue
       node.destroy({ children: true })
       this.lootSprites.delete(id)
+    }
+  }
+
+  /** Interns trail their owner and get a name tag, because they earned one. */
+  private syncInterns(state: GameState): void {
+    const seen = new Set<number>()
+
+    for (const intern of state.interns) {
+      seen.add(intern.id)
+      let node = this.internSprites.get(intern.id)
+
+      if (!node) {
+        node = new Container()
+        const owner = state.players[intern.ownerId]
+        const colour = owner?.role ? (ROLES[owner.role]?.colour ?? PALETTE.paper) : PALETTE.paper
+        const body = new Sprite(getSprite('pc_intern', colour))
+        body.label = 'body'
+        node.addChild(body)
+
+        const tag = new Text({
+          text: intern.name,
+          style: { fontFamily: 'Silkscreen, monospace', fontSize: 4, fill: PALETTE.paperShadow },
+        })
+        tag.label = 'tag'
+        tag.x = 6 - tag.width / 2
+        tag.y = -7
+        node.addChild(tag)
+
+        this.internSprites.set(intern.id, node)
+        this.layers.interns.addChild(node)
+      }
+
+      node.x = Math.round(intern.pos.x * TILE - 6)
+      node.y = Math.round(intern.pos.y * TILE - 10)
+      node.zIndex = node.y
+      node.visible = intern.outTicks === 0
+    }
+
+    for (const [id, node] of this.internSprites) {
+      if (seen.has(id)) continue
+      node.destroy({ children: true })
+      this.internSprites.delete(id)
     }
   }
 

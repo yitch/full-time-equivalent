@@ -1,6 +1,6 @@
 import { DT, TICK_HZ } from '../constants.js'
-import { getRequest, getRole } from '../content/index.js'
-import { hasGrant, refreshHero } from '../progression.js'
+import { getRequest, getRole, rechargeAt } from '../content/index.js'
+import { RECHARGE_MULTIPLIER, hasGrant, refreshHero } from '../progression.js'
 import { chance, createRng, nextFloat } from '../rng.js'
 import type { GameState, Player, RequestEntity, RoleId, StakeholderEntity } from '../types.js'
 import { damageRequest } from './combat.js'
@@ -25,6 +25,16 @@ export const REVIVE_SPEED = 4
 
 /** Ticks with no damage dealt or taken before regen begins. */
 const OUT_OF_COMBAT_TICKS = TICK_HZ * 4
+
+/**
+ * What an ability costs in Bandwidth. Derived from cooldown so every class is
+ * priced consistently, with an explicit override available in content when a
+ * particular ability should feel cheaper or more expensive than it looks.
+ */
+export function abilityCost(def: { cooldownSeconds: number; bandwidthCost?: number }): number {
+  if (def.bandwidthCost !== undefined) return def.bandwidthCost
+  return Math.round(Math.max(8, Math.min(55, def.cooldownSeconds * 1.15)))
+}
 
 function rng(state: GameState) {
   const r = createRng(state.rngState)
@@ -309,6 +319,24 @@ export function tickHeroBody(state: GameState, player: Player): void {
   hero.outOfCombat++
   if (hero.outOfCombat > OUT_OF_COMBAT_TICKS && hero.stats.regen > 0 && hero.hp < hero.maxHp) {
     hero.hp = Math.min(hero.maxHp, hero.hp + hero.stats.regen * DT)
+  }
+
+  // Bandwidth. Slow everywhere, fast at the water cooler, the canteen, or the
+  // room that is officially for wellness. Leaving the fight to recover is meant
+  // to be a real decision, not a formality.
+  const point = rechargeAt(player.pos.x, player.pos.y)
+  hero.recharging = point !== null
+  const rate = hero.stats.focus * (point ? RECHARGE_MULTIPLIER : 1)
+  if (hero.bandwidth < hero.maxBandwidth) {
+    hero.bandwidth = Math.min(hero.maxBandwidth, hero.bandwidth + rate * DT)
+    if (point && state.tick % TICK_HZ === 0 && hero.bandwidth >= hero.maxBandwidth) {
+      state.events.push({
+        kind: 'bark',
+        at: { ...player.pos },
+        text: 'back at it',
+        playerId: player.id,
+      })
+    }
   }
 
   if (player.shield > 0) player.shield = Math.max(0, player.shield - hero.maxHp * 0.02 * DT)

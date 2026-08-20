@@ -29,6 +29,12 @@ export const ARTIFACT_BASES: ArtifactBase[] = [
   { id: 'energy_drink', name: 'Energy Drink', slot: 'beverage', flavour: 'The third one today. You can hear colours.', implicit: { stat: 'attackSpeed', value: 0.18 }, sprite: 'it_can' },
   { id: 'good_biscuits', name: 'The Good Biscuits', slot: 'beverage', flavour: 'Kept in a drawer. Deployed strategically. Never for the whole team.', implicit: { stat: 'socialGain', value: 0.1 }, sprite: 'it_can' },
 
+  // intern — a follower who is technically not your responsibility
+  { id: 'summer_intern', name: 'Summer Intern', slot: 'intern', flavour: 'Twelve weeks. Extremely keen. Asks why about things you had stopped noticing.', implicit: { stat: 'internPower', value: 1 }, sprite: 'it_intern' },
+  { id: 'placement_student', name: 'Placement Student', slot: 'intern', flavour: 'A whole year. By month four they know the system better than you do.', implicit: { stat: 'internPower', value: 1.25 }, sprite: 'it_intern' },
+  { id: 'graduate_trainee', name: 'Graduate Trainee', slot: 'intern', flavour: 'On the scheme. Rotates out in six months regardless of how well it is going.', implicit: { stat: 'internPower', value: 1.5 }, sprite: 'it_intern' },
+  { id: 'apprentice', name: 'Apprentice', slot: 'intern', flavour: 'Day release on Thursdays. Will outlast every one of you.', implicit: { stat: 'internPower', value: 1.35 }, sprite: 'it_intern' },
+
   // furniture — durability
   { id: 'ergo_chair', name: 'Ergonomic Chair', slot: 'furniture', flavour: 'Assessed, approved, and delivered eight days after you left the team.', implicit: { stat: 'maxHp', value: 30 }, sprite: 'it_chair' },
   { id: 'standing_desk', name: 'Standing Desk', slot: 'furniture', flavour: 'Raised once, in the first week. Lowered permanently in the second.', implicit: { stat: 'armour', value: 3 }, sprite: 'it_desk' },
@@ -68,7 +74,37 @@ export const AFFIX_POOLS: Record<ArtifactSlot, AffixPool[]> = {
     { stat: 'towerDamage', min: 0.04, max: 0.15, label: 'tower damage' },
     { stat: 'power', min: 2, max: 9, label: 'power' },
   ],
+  intern: [
+    { stat: 'internPower', min: 0.15, max: 0.9, label: 'intern damage' },
+    { stat: 'xpGain', min: 0.04, max: 0.16, label: 'XP gained' },
+    { stat: 'maxBandwidth', min: 4, max: 22, label: 'max Bandwidth' },
+    { stat: 'socialGain', min: 0.03, max: 0.11, label: 'Social Capital gained' },
+  ],
 }
+
+/**
+ * What every new starter is issued on day one. Deliberately unexciting: the
+ * point is that a player has something in two slots from the first minute, so
+ * the equipment system announces itself instead of waiting until wave six.
+ */
+export const STARTER_KIT: { base: string; name: string; affixes: { stat: StatKey; value: number }[] }[] = [
+  {
+    base: 'laptop',
+    name: 'Company Laptop (4 years old)',
+    affixes: [
+      { stat: 'attackSpeed', value: 0.12 },
+      { stat: 'power', value: 2 },
+    ],
+  },
+  {
+    base: 'lanyard',
+    name: 'Lanyard (already expired)',
+    affixes: [
+      { stat: 'socialGain', value: 0.05 },
+      { stat: 'moveSpeed', value: 0.3 },
+    ],
+  },
+]
 
 /** Prefixes and suffixes, applied by rarity, purely for flavour on the name. */
 export const NAME_PREFIX: Record<Rarity, string[]> = {
