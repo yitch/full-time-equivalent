@@ -4,6 +4,7 @@ import {
   GRID_H,
   GRID_W,
   PLAYER_SPEED,
+  MAX_SPEED,
   STEERING_SECONDS,
   TICK_HZ,
 } from '../constants.js'
@@ -758,6 +759,18 @@ export function applyIntent(state: GameState, playerId: PlayerId, intent: Intent
 
     case 'end_contractor':
       return endContractor(state)
+
+    case 'set_speed': {
+      const next = Math.max(0, Math.min(MAX_SPEED, Math.round(intent.speed)))
+      if (next === state.speed) return null
+      state.speed = next
+      const who = player?.name ?? 'Somebody'
+      pushLog(
+        state,
+        next === 0 ? `${who} paused the floor.` : `${who} set the pace to ${next}x.`,
+      )
+      return null
+    }
 
     case 'start_wave':
       if (state.phase === 'briefing') {

@@ -15,9 +15,10 @@ Read this file before your first edit. It is short on purpose.
 
 ```bash
 npm install
-npm test          # 133 tests. If these pass, the game works.
+npm test          # 140 tests. If these pass, the game works.
 npm run balance   # plays a full campaign headless and prints a per-wave table
 npm run shots     # drives headless Chrome and regenerates the README screenshots
+npm run build && node packages/server/dist/index.js   # production shape: one process on :8787
 ```
 
 `npm run balance` is the fastest way to understand this game without playing it.
@@ -69,6 +70,7 @@ someone actually emailed you.
 | Add an intern or starter-kit item | `packages/shared/src/content/artifacts.ts` | No |
 | Move or add a recharge point | `packages/shared/src/content/map.ts` (`RECHARGE_SPRITES`) | No |
 | Change Bandwidth costs | `packages/shared/src/sim/heroes.ts` (`abilityCost`) | Yes |
+| Change the fast-forward cap | `packages/shared/src/constants.ts` (`MAX_SPEED`) | No |
 | Change what a defence says it contributes | `content/towers.ts` (`contributes`) | No |
 | Change unlock levels for animals | `packages/shared/src/content/unlocks.ts` | No |
 | Add a HUD icon | `packages/client/src/ui/Icon.tsx` | No |
@@ -147,6 +149,19 @@ making it bigger. Keep it that way:
 `npm run balance` prints the tower/player damage split, but it will not tell you
 whether a system is *findable*. When you add one, play to wave three and check you
 would have noticed it without knowing it was there.
+
+## 3f. Two deployment facts worth knowing
+
+**The server serves the client.** In production it is one Node process on one
+port: `serveStatic` hands out `packages/client/dist` and the WebSocket lives on
+the same origin, so there is no second URL and no CORS. The client picks its
+socket URL from `import.meta.env.PROD` — same origin in production, `:8787` in
+development. If you split them, set `VITE_SERVER_URL` at build time.
+
+**Fast-forward adds steps, it does not shorten the tick.** `stepsForTick(speed)`
+returns how many `step()` calls a driver runs per real tick. Keep it that way:
+the fixed timestep is what makes the sim deterministic, and there is a test
+asserting that 40 ticks at 3x are byte-identical to 120 ticks at 1x.
 
 ## 4. Hard constraints
 

@@ -546,6 +546,13 @@ export interface GameEvent {
 
 export interface GameState {
   tick: number
+  /**
+   * Simulation speed multiplier: 0 is paused, 1 is real time, up to MAX_SPEED.
+   * Applied by the server's loop as extra `step` calls per tick rather than by
+   * shortening the tick, so the fixed timestep — and therefore determinism —
+   * survives fast-forward.
+   */
+  speed: number
   seed: number
   rngState: number
   phase: Phase
@@ -622,6 +629,7 @@ export type Intent =
   | { t: 'cancel_req'; id: EntityId }
   | { t: 'remove_headcount'; kind: 'attrition' | 'voluntary' | 'compulsory' }
   | { t: 'pick_perk'; perk: string }
+  | { t: 'set_speed'; speed: number }
   | { t: 'hire_contractor' }
   | { t: 'end_contractor' }
 

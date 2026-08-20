@@ -24,7 +24,13 @@ Claims. Somebody has to.
 
 ---
 
-## Run it
+## Play it
+
+**Hosted:** see [DEPLOY.md](DEPLOY.md) — the repo ships a Render blueprint, so
+putting it online is New → Blueprint → pick this repo, and you get a URL to
+share. The whole game is one Node process on one port.
+
+**Locally:**
 
 ```bash
 npm install && npm run dev
@@ -33,8 +39,11 @@ npm install && npm run dev
 Client on **http://localhost:5173**, game server on **ws://localhost:8787**.
 Open the client, enter a name, get a 4-letter room code, share it. Up to five.
 
+For a production-shaped run — one process serving both — use `npm run build`
+then `node packages/server/dist/index.js` and open **http://localhost:8787**.
+
 ```bash
-npm test        # 133 tests — sim, classes, progression, loot, headcount, art, clarity
+npm test        # 140 tests — sim, classes, progression, loot, headcount, art, clarity
 npm run balance # headless full-campaign report, no browser needed
 npm run typecheck
 npm run shots      # regenerate the README screenshots (needs Google Chrome)
@@ -91,6 +100,16 @@ dysfunctions. **Every class's flaw is its strongest ability and its price.**
 | **MOUSE** — Avoids firm decisions | Takes 55% less, ignored by requests | Deals 35% less. Nothing sticks to you, including outcomes. |
 | **VIPER** — Vindictive Person Endangering Results | Permanently stronger with every breach | You need the team to fail. |
 | **DODO** — Dangerously Outdated Opinions | +140% damage | Cooldown reduction does nothing and your towers never upgrade. |
+
+## Pace
+
+Space pauses. `-` and `=` change the speed, or click the pace control in the top
+bar: **1x, 2x, 3x**. Fast-forward runs extra whole simulation steps rather than
+shortening the tick, so a 3x run is byte-identical to the same run at 1x — it is
+the same game, only sooner. There is a test that proves it.
+
+Speed is server-side and shared, because the simulation is: one player
+fast-forwarding fast-forwards the whole room.
 
 ## Bandwidth, and where you go to get it back
 
@@ -258,7 +277,7 @@ hero levelling and affixed loot, a headcount establishment with an approval
 pipeline and three redundancy routes, profile persistence, 8 waves plus the Open
 Enrollment boss, networked co-op for 1–5.
 
-**133 tests**, including a balance regression suite that plays the whole campaign
+**140 tests**, including a balance regression suite that plays the whole campaign
 headless in under a second and fails if processes stop out-damaging people.
 
 Not built yet: audio, maps 2+, the four non-Open-Enrollment bosses, crafting,

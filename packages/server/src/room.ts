@@ -1,6 +1,7 @@
 import {
   TICKS_PER_SNAPSHOT,
   TICK_MS,
+  stepsForTick,
   applyIntent,
   createGame,
   removePlayer,
@@ -116,7 +117,11 @@ export class Room {
       }
 
       const before = this.state.phase
-      step(this.state)
+      // Fast-forward runs extra whole steps rather than shortening the tick, so
+      // the fixed timestep survives and a 3x run is the same simulation as a 1x
+      // one. Speed 0 pauses: intents still apply, nothing advances.
+      const simSteps = stepsForTick(this.state.speed)
+      for (let s = 0; s < simSteps; s++) step(this.state)
       this.sinceSnapshot++
 
       // Bank progression the moment the run resolves, not on disconnect.

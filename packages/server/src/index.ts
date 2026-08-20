@@ -4,6 +4,7 @@ import { WebSocketServer } from 'ws'
 import type { WebSocket } from 'ws'
 import type { ClientMessage } from '@fte/shared'
 import { Room, makeRoomCode } from './room.js'
+import { findClientDist, serveStatic } from './static.js'
 
 /**
  * FTE_PORT wins over PORT so a dev harness that injects PORT for the web server
@@ -24,12 +25,15 @@ function findOrCreateRoom(code?: string): Room {
   return room
 }
 
+const clientDist = findClientDist()
+
 const http = createServer((req, res) => {
   if (req.url === '/health') {
     res.writeHead(200, { 'content-type': 'application/json' })
     res.end(JSON.stringify({ ok: true, rooms: rooms.size }))
     return
   }
+  if (clientDist && serveStatic(clientDist, req, res)) return
   res.writeHead(404)
   res.end()
 })
@@ -74,5 +78,9 @@ wss.on('connection', (socket: WebSocket) => {
 })
 
 http.listen(PORT, () => {
-  console.log(`Shared Services is open. ws://localhost:${PORT}`)
+  if (clientDist) {
+    console.log(`Shared Services is open on http://localhost:${PORT} (client from ${clientDist})`)
+  } else {
+    console.log(`Shared Services is open. ws://localhost:${PORT} (no built client; run the Vite dev server)`)
+  }
 })

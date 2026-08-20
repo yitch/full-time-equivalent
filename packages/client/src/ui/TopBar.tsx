@@ -72,7 +72,36 @@ function Meter({
   )
 }
 
-export function TopBar({ state }: { state: GameState }) {
+/**
+ * Pace control. Speed is server-side and shared: this is a co-op game, so one
+ * player fast-forwarding fast-forwards everybody, which is the correct and only
+ * workable behaviour for a shared authoritative simulation.
+ */
+function Pace({ speed, onSpeed }: { speed: number; onSpeed: (n: number) => void }) {
+  return (
+    <div className="pace" title="Pace — space to pause, - and = to change">
+      <button
+        className={`pb${speed === 0 ? ' on' : ''}`}
+        onClick={() => onSpeed(speed === 0 ? 1 : 0)}
+        title="Pause (space)"
+      >
+        {speed === 0 ? '▶' : '❙❙'}
+      </button>
+      {[1, 2, 3].map((n) => (
+        <button
+          key={n}
+          className={`pb${speed === n ? ' on' : ''}`}
+          onClick={() => onSpeed(n)}
+          title={`${n}x speed`}
+        >
+          {n}x
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function TopBar({ state, onSpeed }: { state: GameState; onSpeed: (n: number) => void }) {
   const wave = WAVES[state.waveIndex]
   const seconds = state.phaseTicks > 0 ? Math.ceil(state.phaseTicks / TICK_HZ) : null
   const sla = Math.round(state.stats.slaCompliance * 100)
@@ -92,6 +121,8 @@ export function TopBar({ state }: { state: GameState }) {
         <Meter resource="social" value={state.socialCapital} />
         <Meter resource="sla" value={sla} max={100} suffix="%" />
       </div>
+
+      <Pace speed={state.speed ?? 1} onSpeed={onSpeed} />
 
       <div className="wave-chip pixel" title={theme.motto}>
         <Icon name="wave" size={9} colour={PALETTE.highlighter} /> WAVE <b>{(wave?.index ?? 0) + 1}</b>/

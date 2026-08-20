@@ -1,0 +1,30 @@
+# Render blueprint.
+#
+# One web service: the game server also serves the built client, so there is a
+# single URL, a single port, and no CORS. Point Render at this repo (New →
+# Blueprint) and it deploys with no further configuration.
+#
+# Note on the free plan: the filesystem is ephemeral and the service sleeps when
+# idle. That means player profiles — account level, stash, unlocked animals —
+# reset whenever it restarts. Everything inside a single session works fine.
+# To keep progression, move to a paid instance and uncomment the disk below.
+services:
+  - type: web
+    name: full-time-equivalent
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node packages/server/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      # Render supplies PORT; the server reads FTE_PORT first, then PORT.
+      - key: FTE_DATA_DIR
+        value: /var/data
+    # disk:                    # paid plans only — needed for profiles to persist
+    #   name: profiles
+    #   mountPath: /var/data
+    #   sizeGB: 1

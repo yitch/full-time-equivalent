@@ -24,9 +24,20 @@ export function getProfileId(): string {
   return id
 }
 
-const DEFAULT_URL =
-  import.meta.env.VITE_SERVER_URL ??
-  `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8787`
+/**
+ * Where the game server is.
+ *
+ * In production the server serves this bundle too, so the socket is simply the
+ * same origin — no second URL to configure and no CORS. In development Vite is
+ * on 5173 and the game server on 8787, so the port is explicit.
+ */
+const DEFAULT_URL = (() => {
+  const override = import.meta.env.VITE_SERVER_URL
+  if (override) return override
+  const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
+  if (import.meta.env.PROD) return `${scheme}://${location.host}`
+  return `${scheme}://${location.hostname}:8787`
+})()
 
 /**
  * Thin transport. It sends intents and receives snapshots — it holds no game

@@ -679,3 +679,14 @@ button.chunky:disabled { opacity: 0.4; cursor: not-allowed; }
 .portrait { image-rendering: pixelated; flex: 0 0 auto; }
 .rhead { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 4px; }
 .rhead > div { min-width: 0; }
+
+/* ── pace control ────────────────────────────────────────────────────────── */
+
+.pace { display: flex; gap: 2px; flex: 0 0 auto; }
+.pace .pb {
+  font-family: 'Silkscreen', monospace; font-size: 9px; min-width: 26px; padding: 5px 0;
+  background: var(--void); color: var(--paper-dim);
+  border: 1px solid var(--wall); cursor: pointer;
+}
+.pace .pb:hover { border-color: var(--tube-glow); color: var(--paper); }
+.pace .pb.on { background: var(--tube-glow); color: var(--void); border-color: var(--tube-glow); }

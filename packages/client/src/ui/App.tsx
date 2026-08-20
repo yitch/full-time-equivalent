@@ -1,4 +1,4 @@
-import { ROLES, TOWERS, TOWER_IDS } from '@fte/shared'
+import { MAX_SPEED, ROLES, TOWERS, TOWER_IDS } from '@fte/shared'
 import type {
   ArtifactSlot,
   ExitKind,
@@ -59,6 +59,9 @@ export function App() {
   const { progress: tutorial, update: setTutorial } = useTutorial()
 
   const netRef = useRef<NetClient | null>(null)
+  // The keyboard handler is registered once; it reads the live state from here
+  // rather than closing over a snapshot that is stale 100ms later.
+  const stateRef = useRef<GameState | null>(null)
   const heldRef = useRef(new Set<string>())
   const lastMoveRef = useRef<Vec2>({ x: 0, y: 0 })
   const toastTimer = useRef<number | null>(null)
@@ -71,7 +74,10 @@ export function App() {
 
   const net = useMemo(() => {
     const client = new NetClient({
-      onState: setState,
+      onState: (next) => {
+        stateRef.current = next
+        setState(next)
+      },
       onProfile: setProfile,
       onWelcome: (playerId, code) => {
         setLocalPlayerId(playerId)
@@ -140,6 +146,19 @@ export function App() {
         setHcOpen((open) => !open)
         return
       }
+      if (key === ' ') {
+        event.preventDefault()
+        net.send({ t: 'set_speed', speed: (stateRef.current?.speed ?? 1) === 0 ? 1 : 0 })
+        return
+      }
+      if (key === '=' || key === '+') {
+        net.send({ t: 'set_speed', speed: Math.min(MAX_SPEED, (stateRef.current?.speed ?? 1) + 1) })
+        return
+      }
+      if (key === '-' || key === '_') {
+        net.send({ t: 'set_speed', speed: Math.max(0, (stateRef.current?.speed ?? 1) - 1) })
+        return
+      }
       if (key === 'escape') {
         setSelected(null)
         setTechOpen(false)
@@ -204,6 +223,7 @@ export function App() {
   const pickPerk = (perk: string) => net.send({ t: 'pick_perk', perk })
   const hireContractor = () => net.send({ t: 'hire_contractor' })
   const endContractor = () => net.send({ t: 'end_contractor' })
+  const setSpeed = (speed: number) => net.send({ t: 'set_speed', speed })
   const sellTower = (towerId: number) => net.send({ t: 'sell', towerId })
 
   const openContext = (target: { x: number; y: number; tile: Vec2 }) => {
@@ -245,7 +265,7 @@ export function App() {
 
   return (
     <div className="shell">
-      <TopBar state={state} />
+      <TopBar state={state} onSpeed={setSpeed} />
 
       <div className="board-wrap">
         <Board
@@ -273,7 +293,7 @@ export function App() {
 
           <div className="hint">
             <b>WASD</b> move · <b>Q F E R</b> abilities · <b>C</b> character · <b>H</b> headcount ·{' '}
-            <b>TAB</b> research · <b>?</b> tutorial · <b>1-9</b> pick a process · click to place ·{' '}
+            <b>TAB</b> research · <b>?</b> tutorial · <b>space</b> pause · <b>-/=</b> pace · <b>1-9</b> pick a process · click to place ·{' '}
             <b>right-click</b> for headcount
             <br />
             {me?.role && ROLES[me.role]?.title}

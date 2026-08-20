@@ -17,6 +17,23 @@ export const TICKS_PER_SNAPSHOT = TICK_HZ / SNAPSHOT_HZ
 
 export const MAX_PLAYERS = 5
 
+/**
+ * Fast-forward. Anything above 3 stops being "watch it faster" and starts being
+ * "miss what happened", which is not a speed control, it is a skip button.
+ */
+export const MAX_SPEED = 3
+export const SPEED_STEPS = [0, 1, 2, 3] as const
+
+/**
+ * How many simulation steps a driver should run for one real tick at a given
+ * speed. Fast-forward adds whole steps rather than shortening the tick, so the
+ * fixed timestep — and therefore determinism — is identical at every pace.
+ */
+export function stepsForTick(speed: number | undefined): number {
+  if (speed === undefined || Number.isNaN(speed)) return 1
+  return Math.max(0, Math.min(MAX_SPEED, Math.round(speed)))
+}
+
 export const START_MORALE = 100
 export const START_COMPLIANCE = 100
 export const START_BUDGET = 260

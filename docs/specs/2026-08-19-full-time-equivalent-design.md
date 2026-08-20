@@ -2,6 +2,8 @@
 *a people operations tower defence*
 
 **Status:** approved 2026-08-19 · **Slice:** Floor 3 — Shared Services
+**Revision 8 (2026-08-20):** a shared pace control (pause / 1x / 2x / 3x), and
+the whole game collapsed into a single deployable process.
 **Revision 7 (2026-08-20):** contractors as the instant route to headcount, the
 three ways out signposted on the panel, tower floor markers, animal portraits in
 the roster, and generated README screenshots.
@@ -521,6 +523,17 @@ should have to click Next to acknowledge that they have just built a tower.
 Skip is always one click away and remembered in `localStorage`; `?` brings it
 back and dismisses whatever panel is on top first.
 
+## 8c. Pace
+
+Pause, 1x, 2x, 3x, shared across the room because the simulation is shared.
+Space pauses; `-` and `=` step the pace.
+
+Fast-forward runs **extra whole simulation steps per tick** rather than
+shortening the tick. That keeps the fixed timestep, which keeps the sim
+deterministic at every speed — 40 ticks at 3x produce byte-identical state to
+120 ticks at 1x, and a test asserts it. Capped at 3, because above that it stops
+being "watch it faster" and becomes "miss what happened".
+
 ## 9. Architecture
 
 ```
@@ -528,6 +541,10 @@ packages/shared/   pure TS. sim + content. no DOM, no Node APIs. deterministic, 
 packages/server/   authoritative loop @20Hz, snapshots @10Hz, room codes, 1–5 players.
 packages/client/   React shell (HUD, tech tree, character sheet) + PixiJS canvas.
 ```
+
+**In production it is one process.** The server serves the built client and hosts
+the WebSocket on the same origin, so a deployment is a single Node service on a
+single port with no CORS and no second URL to keep in sync. See `DEPLOY.md`.
 
 Progression lives in `shared/src/progression.ts` (XP, stats, talents, loot rolls)
 and `shared/src/types-progression.ts`. Content for the new systems is in

@@ -13,6 +13,7 @@ import type { GameState, Player, PlayerId, RoleId } from '../types.js'
 export function createGame(seed: number): GameState {
   return {
     tick: 0,
+    speed: 1,
     seed,
     rngState: seed >>> 0,
     phase: 'lobby',
