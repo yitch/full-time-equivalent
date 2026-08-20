@@ -1,4 +1,13 @@
-import { ROLES, ROLE_IDS } from '@fte/shared'
+import {
+  ACCOUNT_XP_SOURCES,
+  PALETTE,
+  ROLES,
+  ROLE_IDS,
+  accountXpToNext,
+  nextAnimalUnlock,
+  unlockLevelFor,
+} from '@fte/shared'
+import { Icon } from './Icon.js'
 import type { GameState, PlayerId, Profile, RoleId } from '@fte/shared'
 import { useState } from 'react'
 
@@ -89,12 +98,42 @@ export function Lobby({ state, localPlayerId, roomCode, connected, onConnect, on
       <div className="panel">
         <h1>PICK YOUR ANIMAL</h1>
         {profile && (
-          <p style={{ fontSize: 10, color: 'var(--social)' }}>
-            Account level <b>{profile.accountLevel}</b> · best wave {profile.records.bestWave} ·{' '}
-            {profile.records.runs} run{profile.records.runs === 1 ? '' : 's'} ·{' '}
-            {profile.records.victories} survived · {profile.unlocked.length}/14 animals unlocked ·{' '}
-            {profile.stash.length} in the stash
-          </p>
+          <div className="acct">
+            <div className="acct-line">
+              <Icon name="social" size={10} colour={PALETTE.social} />
+              Account level <b>{profile.accountLevel}</b>
+              <span className="sep">·</span>
+              {profile.unlocked.length}/14 animals
+              <span className="sep">·</span>
+              best wave {profile.records.bestWave}
+              <span className="sep">·</span>
+              {profile.records.runs} run{profile.records.runs === 1 ? '' : 's'}, {profile.records.victories}{' '}
+              survived
+              <span className="sep">·</span>
+              {profile.stash.length} in the stash
+            </div>
+            <div className="acct-track">
+              <div
+                className="acct-fill"
+                style={{
+                  width: `${Math.min(100, (profile.accountXp / accountXpToNext(profile.accountLevel)) * 100)}%`,
+                }}
+              />
+            </div>
+            {(() => {
+              const next = nextAnimalUnlock(profile.accountLevel)
+              if (!next) return <div className="acct-next">Every animal is unlocked. There is nothing left to want.</div>
+              const role = ROLES[next.animal]
+              return (
+                <div className="acct-next">
+                  Next unlock: <b style={{ color: role?.colour }}>{role?.name}</b> at account level{' '}
+                  <b>{next.atLevel}</b> — {next.atLevel - profile.accountLevel} level
+                  {next.atLevel - profile.accountLevel === 1 ? '' : 's'} to go. Account XP comes from{' '}
+                  {ACCOUNT_XP_SOURCES.join(', ')}.
+                </div>
+              )
+            })()}
+          </div>
         )}
         <p style={{ color: 'var(--paper-dim)' }}>
           Room <b style={{ color: 'var(--highlighter)' }}>{roomCode ?? '····'}</b> — share that code. Up to five.
@@ -109,13 +148,19 @@ export function Lobby({ state, localPlayerId, roomCode, connected, onConnect, on
             const mine = me?.role === id
             const locked = profile ? !profile.unlocked.includes(id) : false
             const animalLevel = profile?.animalLevels?.[id] ?? 0
+            const unlockAt = unlockLevelFor(id)
+            const lockText = locked
+              ? unlockAt
+                ? `LOCKED — unlocks at account level ${unlockAt}. You are level ${profile?.accountLevel ?? 1}. Account XP comes from ${ACCOUNT_XP_SOURCES.join(', ')}.`
+                : 'LOCKED.'
+              : role.dysfunction
             return (
               <button
                 key={id}
                 className={`role-card${mine ? ' active' : ''}${locked ? ' locked' : ''}`}
                 style={{ borderColor: mine ? role.colour : undefined }}
                 disabled={locked}
-                title={locked ? 'Unlocks as your account level rises.' : role.dysfunction}
+                title={lockText}
                 onClick={() => onPickRole(id)}
               >
                 <div className="rn" style={{ color: role.colour }}>
@@ -124,8 +169,15 @@ export function Lobby({ state, localPlayerId, roomCode, connected, onConnect, on
                 <div className="rx">
                   {role.expansion}
                   {animalLevel > 1 && <b style={{ color: 'var(--social)' }}> · lvl {animalLevel}</b>}
-                  {locked && <b style={{ color: 'var(--paper-dim)' }}> · LOCKED</b>}
                 </div>
+                {locked && unlockAt && (
+                  <div className="rlock">
+                    <Icon name="lock" size={9} colour={PALETTE.highlighter} />
+                    <span>
+                      Unlocks at <b>account level {unlockAt}</b> — you are {profile?.accountLevel ?? 1}
+                    </span>
+                  </div>
+                )}
                 <div className="rf">{role.flavour}</div>
                 <div className="rp">
                   <b>{role.passiveName}:</b> {role.passiveText}

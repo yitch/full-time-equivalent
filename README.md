@@ -29,7 +29,7 @@ Client on **http://localhost:5173**, game server on **ws://localhost:8787**.
 Open the client, enter a name, get a 4-letter room code, share it. Up to five.
 
 ```bash
-npm test        # 96 tests — sim, classes, progression, loot, headcount, art, balance
+npm test        # 110 tests — sim, classes, progression, loot, headcount, art, clarity
 npm run balance # headless full-campaign report, no browser needed
 npm run typecheck
 ```
@@ -91,6 +91,27 @@ Letter* means you cannot be downed, only removed from the building.
 
 Account level, per-animal levels and a 20-item stash persist between runs against
 a `localStorage` id. No sign-up.
+
+## Learning it
+
+There is a **twelve-step self-guided tutorial** that gets out of the way. Steps
+you can learn by doing advance themselves the moment you do them — nobody should
+have to click Next to acknowledge that they have just built a tower. Skip is one
+click and remembered; `?` brings it back.
+
+Beyond that, three rules, because a game about opaque bureaucracy should not be
+opaque:
+
+- **Every number has an icon and an explanation.** Hover any resource for what
+  drains it and what it costs you.
+- **Every defence says what it is for** — deflects, resolves, buys time, makes
+  everything else hit harder, stops it happening at all — as an icon coloured by
+  the resource it protects, plus a plain-English label on the card.
+- **Every lock answers two questions in one line.** A locked defence shows the
+  *whole* remaining research chain and its total price, not just the next step,
+  and clicking it opens the tech tree on exactly that node with the path
+  highlighted. A locked animal names the precise account level that opens it, the
+  level you are, and where account XP comes from.
 
 ## How it looks
 
@@ -184,7 +205,7 @@ hero levelling and affixed loot, a headcount establishment with an approval
 pipeline and three redundancy routes, profile persistence, 8 waves plus the Open
 Enrollment boss, networked co-op for 1–5.
 
-**96 tests**, including a balance regression suite that plays the whole campaign
+**110 tests**, including a balance regression suite that plays the whole campaign
 headless in under a second and fails if processes stop out-damaging people.
 
 Not built yet: audio, maps 2+, the four non-Open-Enrollment bosses, crafting,

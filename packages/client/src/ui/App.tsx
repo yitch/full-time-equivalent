@@ -20,6 +20,7 @@ import { CharacterSheet } from './CharacterSheet.js'
 import { ContextMenu, type ContextTarget } from './ContextMenu.js'
 import { Headcount } from './Headcount.js'
 import { TechTree } from './TechTree.js'
+import { Tutorial, useTutorial } from './Tutorial.js'
 import { TopBar } from './TopBar.js'
 
 /** Keyboard key -> ability slot. W is movement, so the second ability lives on F. */
@@ -53,6 +54,8 @@ export function App() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [hcOpen, setHcOpen] = useState(false)
   const [ctx, setCtx] = useState<ContextTarget | null>(null)
+  const [techFocus, setTechFocus] = useState<TechId | null>(null)
+  const { progress: tutorial, update: setTutorial } = useTutorial()
 
   const netRef = useRef<NetClient | null>(null)
   const heldRef = useRef(new Set<string>())
@@ -114,7 +117,18 @@ export function App() {
 
       if (key === 'tab') {
         event.preventDefault()
+        setTechFocus(null)
         setTechOpen((open) => !open)
+        return
+      }
+      if (key === '?' || (key === '/' && event.shiftKey)) {
+        event.preventDefault()
+        // Clear whatever is on top, or restarting the tour looks like it did nothing.
+        setTechOpen(false)
+        setSheetOpen(false)
+        setHcOpen(false)
+        setCtx(null)
+        setTutorial({ step: 0, skipped: false })
         return
       }
       if (key === 'c') {
@@ -174,6 +188,10 @@ export function App() {
   const ready = (value: boolean) => net.send({ t: 'ready', value })
   const unlock = (tech: TechId) => net.send({ t: 'unlock', tech })
   const startWave = () => net.send({ t: 'start_wave' })
+  const openTech = (focus?: TechId) => {
+    setTechFocus(focus ?? null)
+    setTechOpen(true)
+  }
   const talent = (node: string) => net.send({ t: 'talent', node })
   const equip = (artifactId: string) => net.send({ t: 'equip', artifactId })
   const unequip = (slot: Parameters<typeof net.send>[0] extends never ? never : ArtifactSlot) =>
@@ -249,8 +267,9 @@ export function App() {
           </div>
 
           <div className="hint">
-            <b>WASD</b> move · <b>Q F E R</b> abilities · <b>C</b> character · <b>H</b> headcount · <b>1-9</b> pick a process ·
-            click to place · <b>right-click</b> for headcount
+            <b>WASD</b> move · <b>Q F E R</b> abilities · <b>C</b> character · <b>H</b> headcount ·{' '}
+            <b>TAB</b> research · <b>?</b> tutorial · <b>1-9</b> pick a process · click to place ·{' '}
+            <b>right-click</b> for headcount
             <br />
             {me?.role && ROLES[me.role]?.title}
             {state.maintenanceTicks > 0 && (
@@ -265,7 +284,28 @@ export function App() {
             <Steering state={state} onOpenTech={() => setTechOpen(true)} onNext={startWave} />
           )}
           {(state.phase === 'gameover' || state.phase === 'victory') && <EndCard state={state} />}
-          {techOpen && <TechTree state={state} onUnlock={unlock} onClose={() => setTechOpen(false)} />}
+          {techOpen && (
+            <TechTree
+              state={state}
+              focus={techFocus}
+              onUnlock={unlock}
+              onClose={() => setTechOpen(false)}
+            />
+          )}
+          {!techOpen && !sheetOpen && !hcOpen && (
+            <Tutorial
+              state={state}
+              localPlayerId={localPlayerId}
+              progress={tutorial}
+              overlayActive={
+                state.phase === 'briefing' ||
+                state.phase === 'steering' ||
+                state.phase === 'gameover' ||
+                state.phase === 'victory'
+              }
+              onUpdate={setTutorial}
+            />
+          )}
           {ctx && (
             <ContextMenu
               state={state}
@@ -303,7 +343,7 @@ export function App() {
         localPlayerId={localPlayerId}
         selected={selected}
         onSelect={setSelected}
-        onOpenTech={() => setTechOpen(true)}
+        onOpenTech={openTech}
         onOpenSheet={() => setSheetOpen(true)}
         onOpenHeadcount={() => setHcOpen(true)}
         onStartWave={startWave}

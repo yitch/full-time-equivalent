@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { accountXpToNext, emptyProfile } from '@fte/shared'
+import { accountXpToNext, animalsUnlockedAt, emptyProfile } from '@fte/shared'
 import type { GameState, Player, Profile } from '@fte/shared'
 
 /**
@@ -108,14 +108,9 @@ export function bankRun(state: GameState, player: Player): Profile | null {
   profile.records.stakeholdersManaged += player.stats.stakeholdersManaged
   if (state.phase === 'victory') profile.records.victories++
 
-  // Unlock a new animal every two account levels, in a fixed order, so there is
-  // always a next thing to try rather than fourteen at once.
-  const ORDER = [
-    'viper', 'cobra', 'yak', 'seagull', 'zebra', 'donkey', 'goose', 'puffin', 'puma', 'dodo',
-  ] as const
-  const target = Math.min(ORDER.length, Math.floor(profile.accountLevel / 2))
-  for (let i = 0; i < target; i++) {
-    const animal = ORDER[i]!
+  // Unlock rules live in shared content so the lobby can tell the player exactly
+  // which level opens which animal, using the same table the server applies.
+  for (const animal of animalsUnlockedAt(profile.accountLevel)) {
     if (!profile.unlocked.includes(animal)) profile.unlocked.push(animal)
   }
 

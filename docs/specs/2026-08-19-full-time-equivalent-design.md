@@ -2,6 +2,9 @@
 *a people operations tower defence*
 
 **Status:** approved 2026-08-19 · **Slice:** Floor 3 — Shared Services
+**Revision 5 (2026-08-20):** legibility pass — pixel icons on every resource and
+defence, a skippable self-guided tutorial, and every lock in the game made to
+explain itself.
 **Revision 4 (2026-08-19):** art direction moved from "Fluorescent Rot" to
 "LUMON" — cold, institutional, retro-corporate — with a distinct palette per
 level; the floor rebuilt as a cubicle farm; right-click headcount menu.
@@ -409,6 +412,43 @@ play; cubicle partitions and wall fittings deliberately do not. A cubicle farm
 that halves your buildable area is set dressing that costs you the game. Tests
 assert that no prop sits on a lane, no two props share a tile, and the decorative
 props outnumber the solid ones.
+
+## 8b. Legibility
+
+Three rules, because a game whose whole subject is opaque bureaucracy has to be
+the opposite of opaque itself.
+
+**Every number has an icon and a sentence.** The five scoreboard resources carry
+a 9×9 pixel icon and a hover explanation of what drains it and what it costs you.
+`RESOURCE_INFO` in `ui/TopBar.tsx` is the single place that text lives.
+
+**Every defence says what it is for.** `TowerDef.contributes` is data: a list of
+outcomes from `CONTRIBUTIONS` — deflects, resolves, buys time, makes everything
+else hit harder, stops it happening, protects the clock, touches Expense Claims,
+sees hidden work. Each renders as an icon coloured by the resource it protects
+plus a plain-English label on the build card. A player never has to infer what
+they are buying from a damage number.
+
+**Every lock answers two questions in one line:** why can I not have this, and
+what precisely do I do about it.
+
+- *Locked defence* — the card shows the **whole remaining research chain** and
+  its total Social Capital price, not just the next step. "Needs Knowledge Base"
+  is useless if Knowledge Base needs three things you also do not have. Clicking
+  the card opens the Steering Committee scrolled to that node with the entire
+  path highlighted. `pathToTech` in `content/unlocks.ts` does the walk.
+- *Locked character* — the card states the exact account level that opens it, the
+  level you are, and where account XP comes from. `unlockLevelFor` is shared with
+  the server, so the advertised level is provably the one that unlocks.
+
+### The tutorial
+
+Twelve steps in `content/tutorial.ts` — data, so the copy can be rewritten
+without touching React. Steps that can be learned by doing carry a `doneWhen`
+trigger and advance themselves the moment the player does the thing; nobody
+should have to click Next to acknowledge that they have just built a tower.
+Skip is always one click away and remembered in `localStorage`; `?` brings it
+back and dismisses whatever panel is on top first.
 
 ## 9. Architecture
 

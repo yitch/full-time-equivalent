@@ -1,4 +1,4 @@
-import type { TowerDef, TowerTypeId, TowerUpgrade } from '../types.js'
+import type { Contribution, TowerDef, TowerTypeId, TowerUpgrade } from '../types.js'
 
 function up(
   name: string,
@@ -30,6 +30,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     damage: 3.8,
     fireRate: 1.6,
     targeting: 'first',
+    contributes: ['deflect'] as Contribution[],
     upgrades: [
       up('Pin To Homepage', 'Now nobody reads it from the homepage.', 40, 0, 2.2),
       up('Add A Banner', 'The banner has a megaphone icon. It changes nothing.', 90, 4, 2.0, 1.15),
@@ -48,6 +49,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     damage: 25.6,
     fireRate: 2.1,
     targeting: 'first',
+    contributes: ['deflect', 'damage'] as Contribution[],
     upgrades: [
       up('Search Indexing', 'People can now find it. Numbers go up immediately.', 70, 2, 1.6),
       up('Screenshots', 'Annotated in red. Genuinely helpful. Rare.', 130, 6, 1.7, 1.2),
@@ -66,6 +68,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     damage: 78.5,
     fireRate: 1.4,
     targeting: 'weakest',
+    contributes: ['deflect'] as Contribution[],
     upgrades: [
       up('Mobile View', 'They will still email you. But fewer of them.', 120, 4, 1.5),
       up('Single Sign-On', 'Removing one password removed forty tickets.', 200, 10, 1.6, 1.25),
@@ -85,6 +88,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     fireRate: 3.6,
     targeting: 'random',
     quirks: ['misroute'],
+    contributes: ['deflect', 'damage'] as Contribution[],
     upgrades: [
       up('Better Intents', 'Ava now misroutes with confidence.', 110, 3, 1.55),
       up('Handoff To Human', 'Ava learns to give up early. This is an improvement.', 190, 9, 1.4, 1.1, 1.3),
@@ -104,6 +108,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     fireRate: 2.0,
     targeting: 'first',
     applies: 'tracked',
+    contributes: ['track', 'slow', 'sla'] as Contribution[],
     upgrades: [
       up('SLA Rules', 'The clock is now visible to everyone, including you.', 150, 5, 1.4),
       up('Auto-Acknowledgement', 'They feel heard. They have not been heard. Same effect.', 240, 12, 1.5, 1.2),
@@ -123,6 +128,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     fireRate: 0.8,
     targeting: 'strongest',
     applies: 'queued',
+    contributes: ['slow'] as Contribution[],
     upgrades: [
       up('Delegation Of Authority', 'Now it can sit in two queues.', 130, 4, 1.2, 1.2),
       up('Escalation Path', 'The queue now has a queue.', 210, 10, 1.3, 1.35),
@@ -142,6 +148,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     fireRate: 1.7,
     targeting: 'first',
     quirks: ['reroute'],
+    contributes: ['track', 'sla'] as Contribution[],
     upgrades: [
       up('Skills-Based Routing', 'It now knows who is on leave. Mostly.', 180, 6, 1.4),
       up('Sentiment Detection', 'Flags the ones typed in all caps.', 260, 14, 1.5, 1.2),
@@ -161,6 +168,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     fireRate: 2.8,
     targeting: 'strongest',
     quirks: ['fragile_uptime'],
+    contributes: ['damage'] as Contribution[],
     upgrades: [
       up('Exception Handling', 'It now emails you when it falls over.', 220, 8, 1.5),
       up('Attended Mode', 'A human watches it work. Nobody is sure who benefits.', 320, 16, 1.6, 1.15),
@@ -179,6 +187,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     damage: 74.7,
     fireRate: 1.4,
     targeting: 'strongest',
+    contributes: ['expense', 'damage'] as Contribution[],
     upgrades: [
       up('Nightly Sync', 'Twelve hours of latency, presented as an achievement.', 200, 7, 1.45),
       up('Real-Time API', 'Finance said no. Then said yes. Then said "not this quarter". Then yes.', 300, 18, 1.6, 1.2),
@@ -198,6 +207,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     fireRate: 0,
     targeting: 'first',
     quirks: ['prevention'],
+    contributes: ['prevent'] as Contribution[],
     upgrades: [
       up('Manager Toolkit', 'A PDF. But a good PDF.', 160, 6, 1),
       up('Drop-In Clinics', 'Four people come. Those four never email you again.', 240, 14, 1),
@@ -217,6 +227,7 @@ export const TOWERS: Record<TowerTypeId, TowerDef> = {
     fireRate: 0,
     targeting: 'first',
     quirks: ['spawn_filter'],
+    contributes: ['prevent'] as Contribution[],
     upgrades: [
       up('Remove The Legalese', 'Legal pushed back. Legal lost, narrowly.', 190, 8, 1),
       up('One Page Maximum', 'Nobody believed it could be one page. It is one page.', 280, 20, 1),
@@ -231,6 +242,62 @@ export function getTower(id: TowerTypeId): TowerDef {
   const def = TOWERS[id]
   if (!def) throw new Error(`Unknown tower type: ${id}`)
   return def
+}
+
+/**
+ * What each outcome means, in one line, with the resource it protects. This is
+ * the text that appears under a build card so a player never has to infer what
+ * they are buying from a damage number.
+ */
+export const CONTRIBUTIONS: Record<Contribution, { icon: string; label: string; blurb: string; resource: string }> = {
+  deflect: {
+    icon: 'deflect',
+    label: 'Deflects',
+    blurb: 'Kills trivia early, before it becomes a ticket. In-SLA kills near the door earn Social Capital.',
+    resource: 'social',
+  },
+  damage: {
+    icon: 'damage',
+    label: 'Resolves',
+    blurb: 'Straightforward throughput. Fewer things reach the CHRO, so Morale holds.',
+    resource: 'morale',
+  },
+  slow: {
+    icon: 'slow',
+    label: 'Buys time',
+    blurb: 'Holds requests in a queue so your other defences get more shots at them.',
+    resource: 'morale',
+  },
+  track: {
+    icon: 'track',
+    label: 'Makes everything else hit harder',
+    blurb: 'Applies TRACKED: +30% damage taken from every source. The keystone multiplier.',
+    resource: 'morale',
+  },
+  prevent: {
+    icon: 'prevent',
+    label: 'Stops it happening',
+    blurb: 'Reduces how much arrives at all. Invisible, unglamorous, and the best value in the game.',
+    resource: 'sla',
+  },
+  sla: {
+    icon: 'sla',
+    label: 'Protects the clock',
+    blurb: 'Buys SLA headroom, so fewer requests escalate into something twice as dangerous.',
+    resource: 'sla',
+  },
+  expense: {
+    icon: 'expense',
+    label: 'Touches Expense Claims',
+    blurb: 'One of the only things in the game that can damage an Expense Claim at all.',
+    resource: 'budget',
+  },
+  stealth: {
+    icon: 'stealth',
+    label: 'Sees hidden work',
+    blurb: 'Reveals what no other tower can target. Protects Compliance rather than Morale.',
+    resource: 'compliance',
+  },
 }
 
 /** Sell refund rate. Deliberately punishing: undoing a process costs you. */

@@ -15,7 +15,7 @@ Read this file before your first edit. It is short on purpose.
 
 ```bash
 npm install
-npm test          # 96 tests. If these pass, the game works.
+npm test          # 110 tests. If these pass, the game works.
 npm run balance   # plays a full campaign headless and prints a per-wave table
 ```
 
@@ -63,6 +63,10 @@ someone actually emailed you.
 | Add speech bubbles / ticker lines | `packages/shared/src/content/barks.ts` | No |
 | Change the palette or add a level wing | `packages/shared/src/content/palette.ts` | No |
 | Add office furniture | `packages/client/src/render/office.ts` + `content/map.ts` | No |
+| Reword the tutorial | `packages/shared/src/content/tutorial.ts` | No |
+| Change what a defence says it contributes | `content/towers.ts` (`contributes`) | No |
+| Change unlock levels for animals | `packages/shared/src/content/unlocks.ts` | No |
+| Add a HUD icon | `packages/client/src/ui/Icon.tsx` | No |
 | Draw a sprite | `packages/client/src/render/pixels.ts` | No |
 | Change the map | `packages/shared/src/content/map.ts` | No |
 | Change combat rules | `packages/shared/src/sim/combat.ts` | Yes |
@@ -103,6 +107,24 @@ player and they recover differently.
 
 `enforceHeadcount` runs every tick, so anything that changes the establishment is
 automatically reconciled. Do not try to keep the count by hand.
+
+## 3d. Legibility is a hard requirement
+
+The subject of this game is opaque bureaucracy. The game itself must be the
+opposite, so three rules are enforced by tests:
+
+- **Every defence declares what it contributes.** `TowerDef.contributes` drives
+  the icons and the plain-English line on the build card. A tower with an empty
+  `contributes` fails a test.
+- **Every lock explains itself in one line** — why you cannot have it, and what
+  precisely to do. Locked towers show the *whole* research chain and its total
+  price via `pathToTech`; locked animals name the exact account level.
+- **Unlock rules live in `content/unlocks.ts` and are shared with the server.**
+  If you change what unlocks when, change it there or the lobby will advertise a
+  level the server does not honour. A test compares the two.
+
+Icons are 9×9 pixel maps in `ui/Icon.tsx`, same discipline as the sprites: the
+art is a text block, so it diffs cleanly.
 
 ## 4. Hard constraints
 

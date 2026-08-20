@@ -58,7 +58,7 @@ html, body, #root {
 
 .board {
   position: relative;
-  width: min(100%, calc((100vh - 260px) * 1.6667));
+  width: min(100%, calc((100vh - 300px) * 1.6667));
   max-width: 1280px;
   border: 2px solid var(--wall);
   box-shadow: 0 0 0 1px var(--void), 0 12px 40px rgba(0, 0, 0, 0.6);
@@ -73,21 +73,25 @@ html, body, #root {
 .topbar {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   padding: 8px 14px;
   background: linear-gradient(180deg, var(--carpet) 0%, var(--carpet-dark) 100%);
   border-bottom: 2px solid var(--wall);
   flex-wrap: wrap;
 }
 
-.brand { font-size: 13px; color: var(--tube-glow); white-space: nowrap; }
+.brand { font-size: 12px; color: var(--tube-glow); white-space: nowrap; flex: 0 0 auto; }
 .brand small { color: var(--paper-dim); font-size: 8px; display: block; letter-spacing: 0.12em; }
 
-.meters { display: flex; gap: 14px; flex: 1; flex-wrap: wrap; }
+.meters { display: flex; gap: 10px; flex: 1; flex-wrap: nowrap; min-width: 0; overflow: hidden; }
 
-.meter { min-width: 116px; }
-.meter .label { font-size: 8px; color: var(--paper-dim); letter-spacing: 0.1em; }
-.meter .value { font-size: 15px; font-weight: 600; }
+.meter { min-width: 88px; flex: 1 1 0; }
+.meter .label {
+  font-size: 8px; color: var(--paper-dim); letter-spacing: 0.1em;
+  display: flex; align-items: center; gap: 4px;
+}
+.meter { cursor: help; }
+.meter .value { font-size: 14px; font-weight: 600; line-height: 1.15; }
 .meter .track { height: 5px; background: var(--void); border: 1px solid var(--wall); margin-top: 2px; }
 .meter .fill { height: 100%; transition: width 160ms linear; }
 
@@ -99,20 +103,29 @@ html, body, #root {
   white-space: nowrap;
 }
 .wave-chip b { color: var(--highlighter); }
+.wave-chip { cursor: help; }
 
 /* ── bottom bar ──────────────────────────────────────────────────────────── */
 
 .bottombar {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   padding: 8px 14px;
+  max-height: 34vh;
   background: linear-gradient(0deg, var(--carpet) 0%, var(--carpet-dark) 100%);
   border-top: 2px solid var(--wall);
   align-items: start;
 }
 
-.build-strip { display: flex; gap: 6px; flex-wrap: wrap; }
+.build-strip {
+  display: flex; gap: 6px; flex-wrap: nowrap;
+  overflow-x: auto; overflow-y: hidden; padding-bottom: 4px;
+  scrollbar-width: thin; scrollbar-color: var(--wall) transparent;
+}
+.build-strip::-webkit-scrollbar { height: 6px; }
+.build-strip::-webkit-scrollbar-thumb { background: var(--wall); }
+.build-strip::-webkit-scrollbar-track { background: transparent; }
 
 .build-card {
   position: relative;
@@ -459,3 +472,125 @@ button.chunky:disabled { opacity: 0.4; cursor: not-allowed; }
 .ctx-item.voluntary:hover:not(:disabled) { border-left-color: var(--social); }
 .ctx-item.compulsory:hover:not(:disabled) { border-left-color: var(--escalate); }
 .ctx-item.compulsory .l { color: var(--escalate); }
+
+/* ── build cards with contributions ──────────────────────────────────────── */
+
+.build-card {
+  width: 116px; min-width: 116px; padding: 5px 6px 6px;
+  display: flex; flex-direction: column; min-height: 104px;
+}
+.build-card .nm { min-height: 20px; }
+.build-card .gives { display: flex; align-items: center; gap: 2px; margin: 3px 0 2px; }
+.build-card .gives .gl {
+  font-size: 7px; color: var(--paper-dim); margin-left: 2px; line-height: 1.1;
+}
+.build-card .cost { display: flex; gap: 7px; align-items: center; font-size: 9px; }
+.build-card .cost .b { color: var(--budget); display: flex; align-items: center; gap: 2px; }
+.build-card .cost .f { color: var(--paper-dim); display: flex; align-items: center; gap: 2px; }
+.build-card .blocked {
+  display: block; font-size: 7px; color: var(--escalate); margin-top: 2px;
+}
+.build-card.locked { opacity: 0.72; cursor: pointer; border-style: dashed; }
+.build-card.locked:hover { opacity: 1; border-color: var(--social); border-style: solid; }
+.build-card.locked .nm { color: var(--paper-dim); }
+.build-card .unlock { margin-top: 2px; }
+.build-card .unlock .chain {
+  display: block; font-size: 6.5px; color: var(--paper-dim); line-height: 1.25;
+  max-height: 16px; overflow: hidden;
+}
+.build-card .unlock .price {
+  display: flex; align-items: center; gap: 2px; font-size: 8.5px;
+  color: var(--paper-dim); margin-top: 2px;
+}
+.build-card .unlock .price.can { color: var(--social); }
+
+.strip-foot {
+  display: flex; align-items: center; gap: 8px; margin-top: 6px;
+  font-size: 9px; color: var(--paper-dim); flex-wrap: wrap;
+}
+.hc-chip { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ── tech tree clarity ───────────────────────────────────────────────────── */
+
+.focus-note {
+  border-left: 3px solid var(--highlighter); background: rgba(232,216,74,0.09);
+  padding: 7px 10px; font-size: 10px; line-height: 1.55; margin: 0 0 12px;
+}
+.branch h3 { display: flex; flex-direction: column; gap: 2px; }
+.branch h3 .bblurb {
+  font-family: 'IBM Plex Mono', monospace; font-size: 8px; color: var(--paper-dim);
+  letter-spacing: 0; text-transform: none;
+}
+.tech .tn { display: flex; align-items: center; gap: 4px; }
+.tech .tunlocks { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 2px; }
+.tech .tu {
+  display: flex; align-items: center; gap: 3px; font-size: 7.5px;
+  color: var(--tube-glow); background: rgba(111,211,196,0.08); padding: 1px 3px;
+}
+.tech .tc { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
+.tech .tchain { color: var(--paper-dim); font-size: 7.5px; }
+.tech.onpath { border-color: var(--highlighter); box-shadow: 0 0 0 1px var(--highlighter); }
+.tech.onpath.locked { opacity: 0.85; }
+
+/* ── lobby account + locks ───────────────────────────────────────────────── */
+
+.acct { margin: 8px 0 12px; }
+.acct-line {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  font-size: 10px; color: var(--paper-dim);
+}
+.acct-line b { color: var(--social); }
+.acct-line .sep { color: var(--wall-light); }
+.acct-track {
+  height: 4px; background: var(--void); border: 1px solid var(--wall); margin: 5px 0 4px;
+}
+.acct-fill { height: 100%; background: var(--social); }
+.acct-next { font-size: 9px; color: var(--paper-dim); line-height: 1.5; }
+.acct-next b { color: var(--paper); }
+
+.rlock {
+  display: flex; align-items: center; gap: 5px; margin-top: 6px;
+  font-size: 8px; color: var(--highlighter);
+  background: rgba(232,216,74,0.08); padding: 3px 5px;
+}
+.rlock b { color: var(--paper); }
+.role-card.locked { opacity: 0.55; }
+.role-card.locked .rf, .role-card.locked .rp { opacity: 0.7; }
+
+/* ── tutorial ────────────────────────────────────────────────────────────── */
+
+.tut {
+  position: absolute; z-index: 35; width: 330px;
+  background: var(--carpet-dark); border: 1px solid var(--tube);
+  box-shadow: 0 10px 34px rgba(0,0,0,0.7);
+  padding: 10px 12px 9px;
+}
+.tut-centre { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 400px; }
+.tut-topbar { left: 50%; top: 10px; transform: translateX(-50%); }
+.tut-buildbar { left: 12px; bottom: 12px; }
+.tut-side { right: 12px; bottom: 12px; }
+.tut-board { right: 12px; top: 12px; }
+
+.tut-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.tut-title {
+  font-family: 'Silkscreen', monospace; font-size: 10px; color: var(--tube-glow);
+  line-height: 1.35; flex: 1;
+}
+.tut-count { font-size: 8px; color: var(--paper-dim); }
+.tut-body { font-size: 10.5px; line-height: 1.6; margin: 0 0 6px; color: var(--paper); }
+.tut-aside {
+  font-size: 9px; line-height: 1.5; margin: 0 0 8px; color: var(--paper-dim);
+  border-left: 2px solid var(--wall); padding-left: 7px;
+}
+.tut-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tut-nav { display: flex; gap: 5px; }
+.tut button {
+  font-family: inherit; font-size: 9px; padding: 4px 10px; cursor: pointer;
+  background: var(--wall); color: var(--paper); border: none;
+}
+.tut button:hover { background: var(--wall-light); }
+.tut button.go { background: var(--tube-glow); color: var(--void); font-weight: 600; }
+.tut button.go:hover { background: #8ee2d4; }
+.tut-skip { background: transparent !important; color: var(--paper-dim) !important; padding-left: 0 !important; }
+.tut-skip:hover { color: var(--paper) !important; text-decoration: underline; }
+.tut-wait { font-size: 8px; color: var(--highlighter); margin-top: 6px; }

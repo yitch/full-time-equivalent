@@ -700,5 +700,5 @@ export function getRole(id: RoleId): RoleDef {
   return def
 }
 
-/** Four animals are free at the start; the rest unlock through play. */
-export const STARTER_ANIMALS: RoleId[] = ['hippo', 'wolf', 'mouse', 'rhino']
+// STARTER_ANIMALS and the rest of the unlock rules live in content/unlocks.ts,
+// so the client and the server cannot disagree about what is locked.

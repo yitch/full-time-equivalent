@@ -126,9 +126,25 @@ export interface TowerDef {
   applies?: StatusKind
   /** Behaviour hooks handled in combat.ts. */
   quirks?: TowerQuirk[]
+  /**
+   * What this defence actually does for you, in the player's terms. Drives the
+   * icons and the one-line "what am I buying" text on the build card.
+   */
+  contributes: Contribution[]
   upgrades: TowerUpgrade[]
   sprite: string
 }
+
+/** The outcomes a defence can buy you. Each maps to an icon and a sentence. */
+export type Contribution =
+  | 'deflect'
+  | 'damage'
+  | 'slow'
+  | 'track'
+  | 'prevent'
+  | 'sla'
+  | 'expense'
+  | 'stealth'
 
 export type TargetingMode = 'first' | 'last' | 'strongest' | 'weakest' | 'random'
 
