@@ -13,7 +13,9 @@ services:
     name: full-time-equivalent
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build
+    # --include=dev is required: NODE_ENV=production below makes a bare
+    # `npm ci` skip devDependencies, which is where tsc and vite live.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: node packages/server/dist/index.js
     healthCheckPath: /health
     envVars:

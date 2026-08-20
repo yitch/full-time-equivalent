@@ -60,9 +60,26 @@ docker run -p 8787:8787 -v fte-data:/data fte
 
 > The [`Dockerfile`](Dockerfile) is written but has **not** been built and run
 > here — Docker was not available on the machine this was set up on. The Render
-> and plain-Node paths have both been run end to end.
+> build has been reproduced exactly (clean clone, `NODE_ENV=production npm ci
+> --include=dev && npm run build`, then starting the built server), and the
+> plain-Node path has been run end to end.
 
 ---
+
+## If the build fails
+
+**`Cannot find name 'console'` / `Cannot find name 'process'` / `code 127`** —
+the build ran without devDependencies. Render and Railway both set
+`NODE_ENV=production`, which makes a bare `npm ci` skip them, and `tsc` and
+`vite` are devDependencies. The build command must be:
+
+```
+npm ci --include=dev && npm run build
+```
+
+Both `render.yaml` and `railway.json` already do this. If you configured the
+service by hand in a dashboard before the blueprint existed, update the build
+command there.
 
 ## Configuration
 

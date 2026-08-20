@@ -1,6 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+    "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    // src/tools is a Node-only CLI (the balance harness) and needs console and
+    // process. The rule that the *sim* stays free of Node and DOM APIs is
+    // enforced by a test rather than by withholding these types — relying on
+    // their absence broke a deploy and never protected the thing it claimed to.
+    "types": ["node"]
+  },
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test.ts"]
 }

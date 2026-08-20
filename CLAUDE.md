@@ -15,7 +15,7 @@ Read this file before your first edit. It is short on purpose.
 
 ```bash
 npm install
-npm test          # 140 tests. If these pass, the game works.
+npm test          # 145 tests. If these pass, the game works.
 npm run balance   # plays a full campaign headless and prints a per-wave table
 npm run shots     # drives headless Chrome and regenerates the README screenshots
 npm run build && node packages/server/dist/index.js   # production shape: one process on :8787
@@ -158,6 +158,11 @@ the same origin, so there is no second URL and no CORS. The client picks its
 socket URL from `import.meta.env.PROD` — same origin in production, `:8787` in
 development. If you split them, set `VITE_SERVER_URL` at build time.
 
+**The build needs devDependencies.** `tsc` and `vite` are devDependencies, and
+hosts set `NODE_ENV=production`, which makes a bare `npm ci` skip them. Every
+build command in this repo says `npm ci --include=dev`. Changing that breaks
+deploys and not local development, so it fails somewhere you are not looking.
+
 **Fast-forward adds steps, it does not shorten the tick.** `stepsForTick(speed)`
 returns how many `step()` calls a driver runs per real tick. Keep it that way:
 the fixed timestep is what makes the sim deterministic, and there is a test
@@ -168,6 +173,11 @@ asserting that 40 ticks at 3x are byte-identical to 120 ticks at 1x.
 - **`packages/shared` imports nothing from `node:` and nothing from the DOM.** It
   runs in the browser, in Node, and in Vitest. The only exception is
   `src/tools/`, which is Node-only and never imported by `src/index.ts`.
+  `purity.test.ts` enforces this by scanning the source — with string literals
+  stripped first, because the flavour text in this game is full of documents and
+  maintenance windows. It replaced an accidental guard (the package had no
+  `@types/node`, so `process` was a compile error) that protected nothing and
+  broke a production deploy the first time an install layout changed.
 - **The sim is deterministic.** Never call `Math.random()` or `Date.now()` inside
   `src/sim/`. Use the seeded RNG in `src/rng.ts` and write the advanced state
   back to `state.rngState`. There is a test that will catch you.

@@ -43,7 +43,7 @@ For a production-shaped run — one process serving both — use `npm run build`
 then `node packages/server/dist/index.js` and open **http://localhost:8787**.
 
 ```bash
-npm test        # 140 tests — sim, classes, progression, loot, headcount, art, clarity
+npm test        # 145 tests — sim, classes, progression, loot, headcount, art, clarity
 npm run balance # headless full-campaign report, no browser needed
 npm run typecheck
 npm run shots      # regenerate the README screenshots (needs Google Chrome)
@@ -277,7 +277,7 @@ hero levelling and affixed loot, a headcount establishment with an approval
 pipeline and three redundancy routes, profile persistence, 8 waves plus the Open
 Enrollment boss, networked co-op for 1–5.
 
-**140 tests**, including a balance regression suite that plays the whole campaign
+**145 tests**, including a balance regression suite that plays the whole campaign
 headless in under a second and fails if processes stop out-damaging people.
 
 Not built yet: audio, maps 2+, the four non-Open-Enrollment bosses, crafting,

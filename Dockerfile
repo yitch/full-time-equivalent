@@ -7,7 +7,8 @@ COPY package*.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/server/package.json packages/server/
 COPY packages/client/package.json packages/client/
-RUN npm ci
+# --include=dev: tsc and vite are devDependencies and the build needs them.
+RUN npm ci --include=dev
 
 COPY . .
 RUN npm run build
