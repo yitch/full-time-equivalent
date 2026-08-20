@@ -78,6 +78,23 @@ function rasterise(sprite: PixelSprite, accent: string): HTMLCanvasElement {
 }
 
 const cache = new Map<string, Texture>()
+const urlCache = new Map<string, string>()
+
+/**
+ * The same pixel map, as a data URL, for the parts of the UI that are DOM rather
+ * than canvas. Shares the rasteriser with the board so a portrait on a card and
+ * the sprite on the floor can never drift apart.
+ */
+export function rasteriseToDataUrl(name: string, accent: string = PALETTE.paper): string | null {
+  const key = `${activeThemeId}:${name}:${accent}`
+  const hit = urlCache.get(key)
+  if (hit) return hit
+  const sprite = (SPRITES as Record<string, PixelSprite>)[name]
+  if (!sprite) return null
+  const url = rasterise(sprite, accent).toDataURL()
+  urlCache.set(key, url)
+  return url
+}
 
 export function getSprite(name: SpriteName, accent: string = PALETTE.paper): Texture {
   const key = `${activeThemeId}:${name}:${accent}`
@@ -182,7 +199,7 @@ export const REQUEST_LOOK: Record<string, { sprite: SpriteName; accent: string }
 
 /** Seven silhouettes carry eleven towers; the accent carries the branch. */
 export const TOWER_LOOK: Record<string, { sprite: SpriteName; accent: string }> = {
-  intranet: { sprite: 'tw_monitor', accent: PALETTE.wallLight },
+  intranet: { sprite: 'tw_monitor', accent: PALETTE.tubeGlow },
   faq: { sprite: 'tw_papers', accent: PALETTE.tubeGreen },
   portal: { sprite: 'tw_kiosk', accent: PALETTE.lanyardTeal },
   ava: { sprite: 'tw_robot', accent: PALETTE.screenGlow },

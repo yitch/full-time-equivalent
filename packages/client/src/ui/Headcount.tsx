@@ -1,5 +1,11 @@
 import {
   APPROVAL_SLA_THRESHOLD,
+  CONTRACTOR_DAY_RATE,
+  MAX_CONTRACTORS,
+  SELL_REFUND,
+  TOWERS,
+  contractorFee,
+  contractorRate,
   EXIT_OPTIONS,
   HEADCOUNT_COST,
   REQ_STAGES,
@@ -12,6 +18,7 @@ import {
   requisitionSetupCost,
 } from '@fte/shared'
 import type { EntityId, ExitKind, GameState } from '@fte/shared'
+import { Icon } from './Icon.js'
 
 const EXIT_ORDER: ExitKind[] = ['attrition', 'voluntary', 'compulsory']
 
@@ -28,12 +35,16 @@ export function Headcount({
   onRaise,
   onCancel,
   onRemove,
+  onHireContractor,
+  onEndContractor,
   onClose,
 }: {
   state: GameState
   onRaise: () => void
   onCancel: (id: EntityId) => void
   onRemove: (kind: ExitKind) => void
+  onHireContractor: () => void
+  onEndContractor: () => void
   onClose: () => void
 }) {
   const hc = state.headcount
@@ -48,6 +59,16 @@ export function Headcount({
 
   const canRaise =
     state.socialCapital >= reqCost && state.budget >= setupCost && hc.requisitions.length < 3
+
+  const fee = contractorFee(hc.contractors)
+  const nextRate = contractorRate(hc.contractors + 1) - contractorRate(hc.contractors)
+  const canHire = hc.contractors < MAX_CONTRACTORS && state.budget >= fee
+
+  // The cheapest capacity you already own: close a process, free its owner.
+  const cheapest = [...state.towers]
+    .filter((t) => t.expiresIn <= 0)
+    .sort((a, b) => (TOWERS[a.type]?.cost ?? 0) - (TOWERS[b.type]?.cost ?? 0))[0]
+  const cheapestDef = cheapest ? TOWERS[cheapest.type] : null
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -79,10 +100,64 @@ export function Headcount({
             <b style={{ color: free > 0 ? 'var(--tube-glow)' : 'var(--escalate)' }}>{free}</b>
           </div>
           <div className="hc-stat">
-            <span>SALARY / WAVE</span>
-            <b style={{ color: 'var(--budget)' }}>{salary}</b>
+            <span>CONTRACTORS</span>
+            <b style={{ color: hc.contractors > 0 ? 'var(--highlighter)' : 'var(--paper-dim)' }}>
+              {hc.contractors}
+            </b>
+          </div>
+          <div className="hc-stat">
+            <span>PAYROLL / WAVE</span>
+            <b style={{ color: 'var(--budget)' }}>{salary + contractorRate(hc.contractors)}</b>
           </div>
         </div>
+
+        {/*
+          The most frustrating sentence this game can say is "you need headcount"
+          with no next step. So when capacity is the thing blocking you, the three
+          routes out are the first thing on the screen, fastest first.
+        */}
+        {free <= 0 && (
+          <div className="hc-blocked">
+            <div className="hc-blocked-head">
+              <Icon name="lock" size={11} colour="var(--highlighter)" /> NO FREE HEADCOUNT — THREE WAYS OUT
+            </div>
+            <div className="hc-routes">
+              <button className="hc-route now" disabled={!canHire} onClick={onHireContractor}>
+                <span className="rt">1 · Hire a contractor</span>
+                <span className="rd">
+                  Available <b>immediately</b>. No business case, no CFO, no waiting.
+                </span>
+                <span className="rc">
+                  {fee} Budget now, then {nextRate}/wave
+                  {hc.contractors >= MAX_CONTRACTORS ? ' · limit reached' : ''}
+                </span>
+              </button>
+
+              <button className="hc-route" disabled={!cheapest} onClick={onClose}>
+                <span className="rt">2 · Close a process</span>
+                <span className="rd">
+                  Right-click any tower on the floor to decommission it and free its owner.
+                </span>
+                <span className="rc">
+                  {cheapestDef
+                    ? `e.g. ${cheapestDef.name} — frees ${HEADCOUNT_COST[cheapestDef.channel]} FTE, refunds ${Math.round(cheapestDef.cost * SELL_REFUND)}`
+                    : 'nothing built yet'}
+                </span>
+              </button>
+
+              <button className="hc-route slow" disabled={!canRaise} onClick={onRaise}>
+                <span className="rt">3 · Raise a requisition</span>
+                <span className="rd">
+                  Permanent and cheap to run, but it is a queue: <b>three waves</b> through Finance and
+                  the CFO.
+                </span>
+                <span className="rc">
+                  {reqCost} Social Capital + {setupCost} Budget, then {SALARY_PER_HEAD}/wave
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {unstaffed > 0 && (
           <p className="hc-warn">
@@ -131,6 +206,22 @@ export function Headcount({
             {!canRaise && hc.requisitions.length >= 3 && (
               <p className="teaches">Three already in the system. Finance will not look at a fourth.</p>
             )}
+
+            <h3 className="hc-sub">CONTRACTORS ({hc.contractors})</h3>
+            <p className="teaches">
+              Instant capacity at roughly three times the price, and gone the moment you stop paying.
+              No approval, no consultation, no credibility earned.
+            </p>
+            <div className="field" style={{ margin: '6px 0' }}>
+              <button className="chunky ghost" disabled={!canHire} onClick={onHireContractor}>
+                HIRE ({fee} BUDGET, {nextRate}/WAVE)
+              </button>
+              {hc.contractors > 0 && (
+                <button className="chunky ghost" onClick={onEndContractor}>
+                  END AN ENGAGEMENT
+                </button>
+              )}
+            </div>
 
             <h3 className="hc-sub">IN THE PIPELINE ({hc.requisitions.length})</h3>
             {hc.requisitions.length === 0 && <p className="teaches">Nothing pending.</p>}

@@ -36,6 +36,47 @@ export function requisitionSetupCost(approved: number): number {
   return Math.round(60 + Math.max(0, approved - STARTING_HEADCOUNT) * 15)
 }
 
+// ──────────────────────────────────────────────────────────────── contractors
+
+/**
+ * The answer every organisation actually reaches for when it cannot get
+ * headcount approved: hire a contractor instead.
+ *
+ * Instant, no business case, no CFO, no waiting three waves. In exchange you pay
+ * an agency fee up front and roughly three times the salary every wave, you earn
+ * no credibility for it, and the moment you stop paying they are gone. It exists
+ * because "you need headcount, come back in three waves" with no other route is
+ * the single most frustrating thing this game can say to a player.
+ */
+export const CONTRACTOR_DAY_RATE = 13
+export const CONTRACTOR_AGENCY_FEE = 90
+/** The rate climbs per contractor: procurement notices eventually. */
+export const CONTRACTOR_ESCALATION = 5
+export const MAX_CONTRACTORS = 6
+
+export function contractorFee(current: number): number {
+  return Math.round(CONTRACTOR_AGENCY_FEE + current * 35)
+}
+
+export function contractorRate(count: number): number {
+  let total = 0
+  for (let i = 0; i < count; i++) total += CONTRACTOR_DAY_RATE + i * CONTRACTOR_ESCALATION
+  return total
+}
+
+export const CONTRACTOR_LINES: string[] = [
+  'Started Monday. Has already found four things nobody else knew about.',
+  'Day rate approved by someone who did not read the day rate.',
+  'On a rolling three-month engagement that everyone expects to roll for two years.',
+  'Sitting in the corner. Nobody is sure who they report to.',
+]
+
+export const CONTRACTOR_END_LINES: string[] = [
+  'The engagement has ended. They took the knowledge with them.',
+  'Not renewed. Their access was revoked before they finished the handover.',
+  'Off-boarded on a Friday afternoon by email.',
+]
+
 // ─────────────────────────────────────────────────────── the approval pipeline
 
 export interface ReqStageDef {

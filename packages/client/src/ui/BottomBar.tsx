@@ -171,12 +171,25 @@ export function BottomBar({
         </div>
 
         <div className="strip-foot">
-          <button className="hc-chip" onClick={onOpenHeadcount} title="The establishment (H)">
+          <button
+            className={`hc-chip${headcountFree(state) <= 0 ? ' urgent' : ''}`}
+            onClick={onOpenHeadcount}
+            title={
+              headcountFree(state) <= 0
+                ? 'No free headcount. Click for the three ways to get more: hire a contractor now, close a process, or raise a requisition.'
+                : 'The establishment (H)'
+            }
+          >
             <Icon name="headcount" size={9} colour={PALETTE.paper} /> {headcountUsed(state)}/
             {effectiveHeadcount(state)} FTE
-            {headcountFree(state) <= 0 && <b> · FULL</b>}
+            {headcountFree(state) <= 0 ? (
+              <b> · FULL — GET MORE</b>
+            ) : (
+              <span className="free"> · {headcountFree(state)} free</span>
+            )}
+            {state.headcount.contractors > 0 && <u> · {state.headcount.contractors} contractor</u>}
             {state.headcount.requisitions.length > 0 && (
-              <em> · {state.headcount.requisitions.length} req pending</em>
+              <em> · {state.headcount.requisitions.length} req in the pipeline</em>
             )}
             {state.headcount.exits.length > 0 && <i> · {state.headcount.exits.length} leaving</i>}
           </button>

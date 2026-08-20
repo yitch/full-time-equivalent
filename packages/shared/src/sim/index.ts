@@ -48,7 +48,9 @@ import {
   advanceRequisitions,
   cancelRequisition,
   chargeSalary,
+  endContractor,
   enforceHeadcount,
+  hireContractor,
   headcountFree,
   raiseRequisition,
   removeHeadcount,
@@ -751,6 +753,12 @@ export function applyIntent(state: GameState, playerId: PlayerId, intent: Intent
     case 'remove_headcount':
       return removeHeadcount(state, intent.kind)
 
+    case 'hire_contractor':
+      return hireContractor(state)
+
+    case 'end_contractor':
+      return endContractor(state)
+
     case 'start_wave':
       if (state.phase === 'briefing') {
         beginWave(state)
@@ -781,7 +789,13 @@ function buildTower(
   // needs fewer. This is where the automation argument stops being rhetorical.
   const cost = HEADCOUNT_COST[def.channel]
   if (headcountFree(state) < cost) {
-    return `No headcount to own it. ${def.name} needs ${cost} FTE; you have ${headcountFree(state)} free.`
+    // Naming the routes out matters: "you need headcount" with no next step is
+    // the most frustrating sentence this game can say.
+    return (
+      `${def.name} needs ${cost} FTE and you have ${headcountFree(state)} free. ` +
+      `Press H to hire a contractor now, raise a requisition for permanent headcount, ` +
+      `or right-click a process to decommission it and free up its owner.`
+    )
   }
   const x = Math.floor(tile.x)
   const y = Math.floor(tile.y)

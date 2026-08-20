@@ -3,6 +3,9 @@ import { TICK_HZ } from '../constants.js'
 import {
   APPROVAL_SLA_THRESHOLD,
   EXIT_OPTIONS,
+  MAX_CONTRACTORS,
+  contractorFee,
+  contractorRate,
   HEADCOUNT_COST,
   REQ_STAGES,
   SALARY_PER_HEAD,
@@ -254,5 +257,73 @@ describe('free capacity accounting', () => {
     applyIntent(state, 'p1', { t: 'build', tower: 'intranet', tile: { x: 12, y: 12 } })
     applyIntent(state, 'p1', { t: 'remove_headcount', kind: 'attrition' })
     expect(headcountFree(state)).toBe(STARTING_HEADCOUNT - 1 - HEADCOUNT_COST.automation)
+  })
+})
+
+describe('when you run out of people, there is always a way out', () => {
+  it('the refusal names all three routes instead of just the problem', () => {
+    const state = game()
+    state.headcount.approved = 1
+    applyIntent(state, 'p1', { t: 'build', tower: 'intranet', tile: { x: 3, y: 1 } })
+    const err = applyIntent(state, 'p1', { t: 'build', tower: 'intranet', tile: { x: 5, y: 1 } }) ?? ''
+    expect(err).toContain('contractor')
+    expect(err).toContain('requisition')
+    expect(err).toContain('decommission')
+  })
+
+  it('a contractor is instant capacity, with no approval and no waiting', () => {
+    const state = game()
+    const before = effectiveHeadcount(state)
+    expect(applyIntent(state, 'p1', { t: 'hire_contractor' })).toBeNull()
+    expect(effectiveHeadcount(state)).toBe(before + 1)
+    expect(state.headcount.requisitions.length).toBe(0)
+    expect(state.headcount.approved).toBe(before)
+  })
+
+  it('costs an agency fee up front and far more than salary per wave', () => {
+    const state = game()
+    state.budget = 1000
+    applyIntent(state, 'p1', { t: 'hire_contractor' })
+    expect(state.budget).toBe(1000 - contractorFee(0))
+
+    const before = state.budget
+    chargeSalary(state)
+    const spent = before - state.budget
+    expect(spent).toBeGreaterThan(STARTING_HEADCOUNT * SALARY_PER_HEAD)
+    expect(contractorRate(1)).toBeGreaterThan(SALARY_PER_HEAD * 2)
+  })
+
+  it('ends instantly, with no package, no consultation and no morale hit', () => {
+    const state = game()
+    applyIntent(state, 'p1', { t: 'hire_contractor' })
+    const morale = state.morale
+    const budget = state.budget
+    expect(applyIntent(state, 'p1', { t: 'end_contractor' })).toBeNull()
+    expect(state.headcount.contractors).toBe(0)
+    expect(state.morale).toBe(morale)
+    expect(state.budget).toBe(budget)
+    expect(state.headcount.exits.length).toBe(0)
+  })
+
+  it('procurement eventually notices', () => {
+    const state = game()
+    state.budget = 100000
+    for (let i = 0; i < MAX_CONTRACTORS; i++) {
+      expect(applyIntent(state, 'p1', { t: 'hire_contractor' }), `hire ${i}`).toBeNull()
+    }
+    expect(applyIntent(state, 'p1', { t: 'hire_contractor' })).toContain('limit')
+  })
+
+  it('the rate escalates, so contractors do not quietly become the strategy', () => {
+    expect(contractorRate(3)).toBeGreaterThan(contractorRate(1) * 3)
+  })
+
+  it('contractors staff towers exactly like establishment does', () => {
+    const state = game()
+    state.headcount.approved = 1
+    applyIntent(state, 'p1', { t: 'build', tower: 'intranet', tile: { x: 3, y: 1 } })
+    expect(applyIntent(state, 'p1', { t: 'build', tower: 'intranet', tile: { x: 5, y: 1 } })).toContain('FTE')
+    applyIntent(state, 'p1', { t: 'hire_contractor' })
+    expect(applyIntent(state, 'p1', { t: 'build', tower: 'intranet', tile: { x: 5, y: 1 } })).toBeNull()
   })
 })

@@ -46,6 +46,7 @@ export function createGame(seed: number): GameState {
       approved: STARTING_HEADCOUNT,
       requisitions: [],
       exits: [],
+      contractors: 0,
       lastSalary: 0,
     },
     storedDamage: {},

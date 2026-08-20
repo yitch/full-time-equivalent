@@ -202,6 +202,8 @@ export function App() {
   const cancelReq = (id: number) => net.send({ t: 'cancel_req', id })
   const removeHead = (kind: ExitKind) => net.send({ t: 'remove_headcount', kind })
   const pickPerk = (perk: string) => net.send({ t: 'pick_perk', perk })
+  const hireContractor = () => net.send({ t: 'hire_contractor' })
+  const endContractor = () => net.send({ t: 'end_contractor' })
   const sellTower = (towerId: number) => net.send({ t: 'sell', towerId })
 
   const openContext = (target: { x: number; y: number; tile: Vec2 }) => {
@@ -330,6 +332,8 @@ export function App() {
               onRaise={raiseReq}
               onCancel={cancelReq}
               onRemove={removeHead}
+              onHireContractor={hireContractor}
+              onEndContractor={endContractor}
               onClose={() => setHcOpen(false)}
             />
           )}

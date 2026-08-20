@@ -2,6 +2,9 @@
 *a people operations tower defence*
 
 **Status:** approved 2026-08-19 · **Slice:** Floor 3 — Shared Services
+**Revision 7 (2026-08-20):** contractors as the instant route to headcount, the
+three ways out signposted on the panel, tower floor markers, animal portraits in
+the roster, and generated README screenshots.
 **Revision 6 (2026-08-20):** the progression loop made visible — day-one kit,
 drops from wave one, Bandwidth with recharge points, a guaranteed level and a
 Performance Review every wave, and an intern who follows you around.
@@ -356,6 +359,24 @@ have."* You cannot hire your way out of a process problem, which is the game
 pointing at the tech tree. Withdrawing a req refunds most of the Budget and none
 of the credibility. Three reqs in the system at once is the cap; Finance will not
 look at a fourth.
+
+### Getting headcount — three routes, and the panel says so
+
+The single most frustrating sentence this game can say is "you need headcount"
+with no next step, so when free FTE hits zero the establishment panel leads with
+all three routes, ordered fastest first.
+
+| Route | Speed | Price | Builds establishment? |
+|---|---|---|---|
+| **Contractor** | Immediate | Agency fee now, ~3× salary per wave, escalating per contractor, capped at 6 | No |
+| **Close a process** | Immediate | The tower, minus a partial refund | No — recovers what you had |
+| **Requisition** | Three waves | Social Capital + recruitment, then 4/wave forever | Yes |
+
+The contractor exists because the requisition alone is a dead end at the exact
+moment a player most needs an answer. It is also, precisely, what organisations
+do: cannot get headcount approved, hire a contractor at triple the price, and
+they are gone the moment you stop paying. No approval, no consultation, and no
+credibility earned for it.
 
 ### Removing headcount — three routes, all of them cost
 

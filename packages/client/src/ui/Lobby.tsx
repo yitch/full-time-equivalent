@@ -8,6 +8,7 @@ import {
   unlockLevelFor,
 } from '@fte/shared'
 import { Icon } from './Icon.js'
+import { Portrait } from './Portrait.js'
 import type { GameState, PlayerId, Profile, RoleId } from '@fte/shared'
 import { useState } from 'react'
 
@@ -163,12 +164,17 @@ export function Lobby({ state, localPlayerId, roomCode, connected, onConnect, on
                 title={lockText}
                 onClick={() => onPickRole(id)}
               >
-                <div className="rn" style={{ color: role.colour }}>
-                  {role.name}
-                </div>
-                <div className="rx">
-                  {role.expansion}
-                  {animalLevel > 1 && <b style={{ color: 'var(--social)' }}> · lvl {animalLevel}</b>}
+                <div className="rhead">
+                  <Portrait animal={id} size={54} dim={locked} />
+                  <div>
+                    <div className="rn" style={{ color: role.colour }}>
+                      {role.name}
+                    </div>
+                    <div className="rx">
+                      {role.expansion}
+                      {animalLevel > 1 && <b style={{ color: 'var(--social)' }}> · lvl {animalLevel}</b>}
+                    </div>
+                  </div>
                 </div>
                 {locked && unlockAt && (
                   <div className="rlock">

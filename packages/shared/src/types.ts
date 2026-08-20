@@ -469,6 +469,11 @@ export interface HeadcountState {
   requisitions: Requisition[]
   /** Heads on their way out, mid-consultation. */
   exits: HeadcountExit[]
+  /**
+   * Contractors. Instant, expensive, and gone the moment you stop paying.
+   * Counted separately from `approved` because they are not establishment.
+   */
+  contractors: number
   /** Budget drained last wave, kept for the HUD. */
   lastSalary: number
 }
@@ -617,6 +622,8 @@ export type Intent =
   | { t: 'cancel_req'; id: EntityId }
   | { t: 'remove_headcount'; kind: 'attrition' | 'voluntary' | 'compulsory' }
   | { t: 'pick_perk'; perk: string }
+  | { t: 'hire_contractor' }
+  | { t: 'end_contractor' }
 
 export interface IntentEnvelope {
   playerId: PlayerId

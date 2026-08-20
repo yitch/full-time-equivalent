@@ -643,3 +643,39 @@ button.chunky:disabled { opacity: 0.4; cursor: not-allowed; }
 .review-card .ref {
   font-size: 10px; color: var(--tube-glow); border-top: 1px solid var(--wall); padding-top: 6px;
 }
+
+/* ── "I cannot build, what do I do" ──────────────────────────────────────── */
+
+.hc-blocked {
+  border: 1px solid var(--highlighter); background: rgba(232,216,74,0.07);
+  padding: 10px 12px; margin: 0 0 14px;
+}
+.hc-blocked-head {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  font-family: 'Silkscreen', monospace; font-size: 10px; color: var(--highlighter);
+}
+.hc-routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.hc-route {
+  display: flex; flex-direction: column; gap: 4px; text-align: left;
+  border: 1px solid var(--wall); background: var(--void); padding: 8px 9px;
+  color: var(--paper); font-family: inherit; cursor: pointer;
+}
+.hc-route:hover:not(:disabled) { border-color: var(--tube-glow); }
+.hc-route:disabled { opacity: 0.4; cursor: not-allowed; }
+.hc-route.now { border-color: var(--tube-glow); }
+.hc-route.slow { border-style: dashed; }
+.hc-route .rt { font-size: 10px; font-weight: 600; }
+.hc-route .rd { font-size: 8.5px; color: var(--paper-dim); line-height: 1.45; }
+.hc-route .rc { font-size: 8.5px; color: var(--budget); }
+.hc-chip.urgent {
+  border-color: var(--highlighter); color: var(--highlighter);
+  animation: nag 1.4s ease-in-out infinite;
+}
+.hc-chip .free { color: var(--tube-glow); }
+.hc-chip u { color: var(--highlighter); text-decoration: none; }
+
+/* ── character portraits ─────────────────────────────────────────────────── */
+
+.portrait { image-rendering: pixelated; flex: 0 0 auto; }
+.rhead { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 4px; }
+.rhead > div { min-width: 0; }

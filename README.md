@@ -4,6 +4,11 @@
 
 > You do not place people. You place processes.
 
+![Gameplay — Floor 3, mid-wave](docs/media/gameplay.png)
+
+<sub>Wave three, Payroll wing. Requests walk the corridors toward the CHRO door; the
+processes you built stand on marked tiles; you are the animal in the middle of it.</sub>
+
 Inbound requests walk your office floor toward a door marked **CHRO**. Everything
 that reaches it costs you Morale. Your defences are a knowledge base, a ticketing
 system, an approval workflow, an RPA bot, and a chatbot named Ava who misroutes
@@ -29,9 +34,10 @@ Client on **http://localhost:5173**, game server on **ws://localhost:8787**.
 Open the client, enter a name, get a 4-letter room code, share it. Up to five.
 
 ```bash
-npm test        # 126 tests — sim, classes, progression, loot, headcount, art, clarity
+npm test        # 133 tests — sim, classes, progression, loot, headcount, art, clarity
 npm run balance # headless full-campaign report, no browser needed
 npm run typecheck
+npm run shots      # regenerate the README screenshots (needs Google Chrome)
 ```
 
 ## The premise is not made up
@@ -49,6 +55,20 @@ Every mechanic is lifted from how HR shared services actually works:
 | The HRBP loses an ability every wave to a meeting | 51% of HR hours go to admin that could be automated |
 
 Sources are cited in the design bible: [`docs/specs/2026-08-19-full-time-equivalent-design.md`](docs/specs/2026-08-19-full-time-equivalent-design.md).
+
+## The screenshots
+
+| | |
+|---|---|
+| ![Character select](docs/media/characters.png) | ![Induction](docs/media/onboarding.png) |
+| **Pick your animal.** All fourteen, with the passive stated plainly and every lock naming the exact account level that opens it. | **Induction.** A twelve-step self-guided tour framed as onboarding. Steps you can learn by doing advance themselves. |
+| ![Research](docs/media/research.png) | ![The establishment](docs/media/headcount.png) |
+| **Steering Committee.** Locked defences show the whole research chain and its total price, and clicking one opens the tree on exactly that node. | **The establishment.** When you run out of people, the three ways out are the first thing on screen, fastest first. |
+| ![Performance review](docs/media/review.png) | ![Character sheet](docs/media/character-sheet.png) |
+| **Performance review.** Every wave ends in a guaranteed level and three development opportunities. Pick one. | **Character sheet.** Talents, stats, Bandwidth, development record and equipment — including the intern slot. |
+
+<sub>Screenshots are generated, not hand-captured: `npm run shots` drives a headless
+Chrome through a scripted playthrough, so they cannot quietly go stale.</sub>
 
 ## You play one of the dangerous animals
 
@@ -160,9 +180,20 @@ Towers do not occupy slots. They consume **people** — an automated process nee
 **1 FTE** to own, a manual one needs **2**. That single table is the entire
 argument for automation, and it sits on the build bar rather than in a deck.
 
-Getting a head is a **queue, not a purchase**: Social Capital to make the case,
-Budget for recruitment, then three stages — drafting, Finance, the CFO — at one
-wave each. A req raised now lands about three waves late.
+### When you run out of people — three ways out
+
+This is the thing that will block you, so the game says so plainly. Press **H**
+and the panel leads with all three routes, fastest first:
+
+| Route | Speed | Price |
+|---|---|---|
+| **Hire a contractor** | **Immediate.** No business case, no CFO, no waiting. | An agency fee now, then roughly triple salary every wave. Gone the moment you stop paying. |
+| **Close a process** | Immediate. Right-click any tower to decommission it. | You lose the tower. You get its owner and part of its cost back. |
+| **Raise a requisition** | Three waves, through Finance and the CFO. | Cheap to run forever — and the only route that builds establishment. |
+
+Getting permanent headcount is a **queue, not a purchase**: Social Capital to
+make the case, Budget for recruitment, then three stages — drafting, Finance, the
+CFO — at one wave each. A req raised now lands about three waves late.
 
 And there is a catch-22, because there always is: below 72% SLA the CFO defers it
 once. *"Before we add people, show me you can run what you have."* You cannot
@@ -227,7 +258,7 @@ hero levelling and affixed loot, a headcount establishment with an approval
 pipeline and three redundancy routes, profile persistence, 8 waves plus the Open
 Enrollment boss, networked co-op for 1–5.
 
-**126 tests**, including a balance regression suite that plays the whole campaign
+**133 tests**, including a balance regression suite that plays the whole campaign
 headless in under a second and fails if processes stop out-damaging people.
 
 Not built yet: audio, maps 2+, the four non-Open-Enrollment bosses, crafting,

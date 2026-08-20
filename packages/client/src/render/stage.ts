@@ -380,6 +380,30 @@ export class GameStage {
       if (!node) {
         node = new Container()
         const look = TOWER_LOOK[tower.type] ?? { sprite: 'tw_monitor' as const, accent: PALETTE.wallLight }
+
+        // A floor pad under every tower. Without it a monitor you built is
+        // indistinguishable from the monitor on somebody's desk, which makes the
+        // whole board unreadable the moment the office got furnished.
+        const pad = new Graphics()
+        pad.label = 'pad'
+        // Darken the tile so the sprite sits on its own ground...
+        pad.rect(0, 0, TILE, TILE)
+        pad.fill({ color: PALETTE.void, alpha: 0.45 })
+        // ...then corner brackets in the tower's own colour. Brackets read as
+        // "somebody put this here" at a glance, which a full outline does not.
+        const b = 4
+        for (const [cx, cy, dx, dy] of [
+          [0, 0, 1, 1],
+          [TILE, 0, -1, 1],
+          [0, TILE, 1, -1],
+          [TILE, TILE, -1, -1],
+        ] as const) {
+          pad.rect(cx + (dx < 0 ? -b : 0), cy + (dy < 0 ? -1 : 0), b, 1)
+          pad.rect(cx + (dx < 0 ? -1 : 0), cy + (dy < 0 ? -b : 0), 1, b)
+        }
+        pad.fill({ color: look.accent, alpha: 0.95 })
+        node.addChild(pad)
+
         const body = new Sprite(getSprite(look.sprite, look.accent))
         body.label = 'body'
         node.addChild(body)

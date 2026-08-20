@@ -6,8 +6,13 @@ import {
   EXIT_LINES,
   EXIT_OPTIONS,
   HEADCOUNT_COST,
+  CONTRACTOR_END_LINES,
+  CONTRACTOR_LINES,
+  MAX_CONTRACTORS,
   REQ_STAGES,
   SALARY_PER_HEAD,
+  contractorFee,
+  contractorRate,
   getTower,
   requisitionCost,
   requisitionSetupCost,
@@ -37,9 +42,12 @@ export function headcountUsed(state: GameState): number {
   return used
 }
 
-/** Heads already committed to leaving are no longer available to cover work. */
+/**
+ * Everyone available to own a process right now: approved establishment, plus
+ * contractors, minus anyone already committed to leaving.
+ */
 export function effectiveHeadcount(state: GameState): number {
-  return Math.max(0, state.headcount.approved - state.headcount.exits.length)
+  return Math.max(0, state.headcount.approved + state.headcount.contractors - state.headcount.exits.length)
 }
 
 export function headcountFree(state: GameState): number {
@@ -224,10 +232,49 @@ export function stepExits(state: GameState): void {
   enforceHeadcount(state)
 }
 
-/** Salary is charged once per wave, on the approved establishment, not on usage. */
+/** Salary is charged once per wave, on the establishment, not on usage. */
 export function chargeSalary(state: GameState): void {
-  const bill = state.headcount.approved * SALARY_PER_HEAD
+  const salary = state.headcount.approved * SALARY_PER_HEAD
+  const rates = contractorRate(state.headcount.contractors)
+  const bill = salary + rates
   state.headcount.lastSalary = bill
   state.budget = Math.max(0, state.budget - bill)
-  pushLog(state, `Payroll ran. ${state.headcount.approved} FTE, ${bill} Budget.`)
+  const contractorNote = rates > 0 ? ` plus ${state.headcount.contractors} contractor(s) at ${rates}` : ''
+  pushLog(state, `Payroll ran. ${state.headcount.approved} FTE, ${salary} Budget${contractorNote}.`)
+}
+
+// ──────────────────────────────────────────────────────────────── contractors
+
+export function hireContractor(state: GameState): string | null {
+  if (state.headcount.contractors >= MAX_CONTRACTORS) {
+    return `Procurement has noticed. ${MAX_CONTRACTORS} contractors is the limit.`
+  }
+  const fee = contractorFee(state.headcount.contractors)
+  if (state.budget < fee) return `Not enough Budget for the agency fee (need ${fee}).`
+
+  state.budget -= fee
+  state.headcount.contractors++
+
+  const { r, done } = rng(state)
+  pushLog(state, `Contractor started. ${pick(r, CONTRACTOR_LINES)}`)
+  done()
+
+  const rate = contractorRate(state.headcount.contractors) - contractorRate(state.headcount.contractors - 1)
+  state.events.push({ kind: 'headcount', at: { x: 20, y: 12 }, text: `+1 CONTRACTOR (${rate}/wave)` })
+  enforceHeadcount(state)
+  return null
+}
+
+/** No consultation, no package, no morale hit. That is the deal both ways. */
+export function endContractor(state: GameState): string | null {
+  if (state.headcount.contractors <= 0) return 'No contractors engaged.'
+  state.headcount.contractors--
+
+  const { r, done } = rng(state)
+  pushLog(state, pick(r, CONTRACTOR_END_LINES))
+  done()
+
+  state.events.push({ kind: 'headcount', at: { x: 20, y: 12 }, text: 'ENGAGEMENT ENDED' })
+  enforceHeadcount(state)
+  return null
 }

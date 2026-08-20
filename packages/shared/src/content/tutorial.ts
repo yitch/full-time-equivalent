@@ -43,16 +43,8 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'day_one',
     title: 'Day One — Induction',
-    body: 'Welcome to the People function. Your induction has been condensed into eleven screens because the full version is four hours and nobody has four hours. You have been issued a laptop and a lanyard. The lanyard has already expired.',
-    aside: 'Everything here is skippable. Nothing here is optional.',
-    icon: 'headcount',
-    anchor: 'centre',
-  },
-  {
-    id: 'the_job',
-    title: 'What the job is',
-    body: 'Inbound requests walk the corridors towards a door marked CHRO. Anything that reaches it costs you Morale. You do not place people to stop them — you place processes.',
-    aside: 'You are also on the floor yourself. That turns out to matter.',
+    body: 'Welcome to the People function. You have been issued a laptop and a lanyard; the lanyard has already expired. Inbound requests walk the corridors towards a door marked CHRO, and anything that reaches it costs you Morale. You do not place people to stop them — you place processes.',
+    aside: 'You are also on the floor yourself, and you can be hurt. Everything here is skippable; nothing here is optional.',
     icon: 'morale',
     anchor: 'centre',
   },
@@ -78,6 +70,14 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Every process needs an owner',
     body: 'Towers do not use abstract slots, they use people. An automated process needs 1 FTE to own; a manual one needs 2. That is the whole argument for automation, and it is on the build card rather than in a deck.',
     aside: 'Press H for the establishment: approvals, salary, and the three ways to let someone go.',
+    icon: 'headcount',
+    anchor: 'buildbar',
+  },
+  {
+    id: 'more_headcount',
+    title: 'When you run out of people',
+    body: 'You will. There are exactly three ways out, and the panel spells them out fastest first: hire a CONTRACTOR for instant capacity at about triple the price, CLOSE a process by right-clicking it to free its owner, or RAISE A REQUISITION for permanent cheap headcount that takes three waves to arrive.',
+    aside: 'The requisition is the right answer and the slow one. The contractor is the wrong answer and the one you will use.',
     icon: 'headcount',
     anchor: 'buildbar',
   },
@@ -165,4 +165,4 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
 ]
 
-export const TUTORIAL_VERSION = 2
+export const TUTORIAL_VERSION = 3
